@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: jml-reconciliation-engine
+  profiles:
+    active: default
+  datasource:
+    url: jdbc:h2:mem:jmldb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;NON_KEYWORDS=CURRENT_ROLE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    hibernate:
+      ddl-auto: update
+    generate-ddl: true
+    show-sql: false
+
+server:
+  port: 8080
+  error:
+    include-message: always
+
+logging:
+  level:
+    root: INFO
+    com.jml.reconciliation: INFO
