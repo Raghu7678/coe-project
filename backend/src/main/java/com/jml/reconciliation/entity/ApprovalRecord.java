@@ -1,8 +1,8 @@
 package com.jml.reconciliation.entity;
 
-import com.jml.reconciliation.model.enums.ApprovalStatus;
 import com.jml.reconciliation.model.enums.PermissionLevel;
 import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -10,61 +10,60 @@ import java.time.LocalDateTime;
 public class ApprovalRecord {
 
     @Id
-    @Column(name = "approval_id", length = 50)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
     private String approvalId;
 
-    @Column(name = "user_id", nullable = false, length = 50)
-    private String userId;
+    @Column(nullable = false)
+    private String username;
 
-    @Column(name = "application_name", nullable = false, length = 50)
-    private String applicationName;
+    @Column(nullable = false)
+    private String appName;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "permission_level", nullable = false, length = 20)
-    private PermissionLevel permissionLevel;
+    @Column(nullable = false)
+    private PermissionLevel grantedPermission;
 
-    @Column(name = "requested_by", nullable = false, length = 50)
     private String requestedBy;
 
-    @Column(name = "approved_by", length = 50)
     private String approvedBy;
 
-    @Column(name = "approval_date", nullable = false)
-    private LocalDateTime approvalDate;
+    private LocalDateTime approvedAt;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private ApprovalStatus status;
+    private String approvalStatus; // APPROVED, REJECTED, PENDING
 
-    @Column(columnDefinition = "TEXT")
-    private String reason;
+    private String rationale;
 
     public ApprovalRecord() {}
 
-    public ApprovalRecord(String approvalId, String userId, String applicationName, PermissionLevel permissionLevel, 
-                          String requestedBy, String approvedBy, LocalDateTime approvalDate, ApprovalStatus status, String reason) {
+    public ApprovalRecord(String approvalId, String username, String appName, PermissionLevel grantedPermission, String requestedBy, String approvedBy, LocalDateTime approvedAt, String approvalStatus, String rationale) {
         this.approvalId = approvalId;
-        this.userId = userId;
-        this.applicationName = applicationName;
-        this.permissionLevel = permissionLevel;
+        this.username = username;
+        this.appName = appName;
+        this.grantedPermission = grantedPermission;
         this.requestedBy = requestedBy;
         this.approvedBy = approvedBy;
-        this.approvalDate = approvalDate;
-        this.status = status;
-        this.reason = reason;
+        this.approvedAt = approvedAt;
+        this.approvalStatus = approvalStatus;
+        this.rationale = rationale;
     }
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
     public String getApprovalId() { return approvalId; }
     public void setApprovalId(String approvalId) { this.approvalId = approvalId; }
 
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
 
-    public String getApplicationName() { return applicationName; }
-    public void setApplicationName(String applicationName) { this.applicationName = applicationName; }
+    public String getAppName() { return appName; }
+    public void setAppName(String appName) { this.appName = appName; }
 
-    public PermissionLevel getPermissionLevel() { return permissionLevel; }
-    public void setPermissionLevel(PermissionLevel permissionLevel) { this.permissionLevel = permissionLevel; }
+    public PermissionLevel getGrantedPermission() { return grantedPermission; }
+    public void setGrantedPermission(PermissionLevel grantedPermission) { this.grantedPermission = grantedPermission; }
 
     public String getRequestedBy() { return requestedBy; }
     public void setRequestedBy(String requestedBy) { this.requestedBy = requestedBy; }
@@ -72,12 +71,12 @@ public class ApprovalRecord {
     public String getApprovedBy() { return approvedBy; }
     public void setApprovedBy(String approvedBy) { this.approvedBy = approvedBy; }
 
-    public LocalDateTime getApprovalDate() { return approvalDate; }
-    public void setApprovalDate(LocalDateTime approvalDate) { this.approvalDate = approvalDate; }
+    public LocalDateTime getApprovedAt() { return approvedAt; }
+    public void setApprovedAt(LocalDateTime approvedAt) { this.approvedAt = approvedAt; }
 
-    public ApprovalStatus getStatus() { return status; }
-    public void setStatus(ApprovalStatus status) { this.status = status; }
+    public String getApprovalStatus() { return approvalStatus; }
+    public void setApprovalStatus(String approvalStatus) { this.approvalStatus = approvalStatus; }
 
-    public String getReason() { return reason; }
-    public void setReason(String reason) { this.reason = reason; }
+    public String getRationale() { return rationale; }
+    public void setRationale(String rationale) { this.rationale = rationale; }
 }

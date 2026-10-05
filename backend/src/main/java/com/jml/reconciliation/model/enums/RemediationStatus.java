@@ -1,11 +1,9 @@
 package com.jml.reconciliation.model.enums;
 
 public enum RemediationStatus {
-    RECOMMENDED,
-    PENDING_REVIEW,
+    PENDING_APPROVAL,
     APPROVED,
-    REJECTED,
     EXECUTED,
-    FAILED,
+    REJECTED,
     ROLLED_BACK
 }

@@ -1,12 +1,9 @@
 package com.jml.reconciliation.entity;
 
-import com.jml.reconciliation.model.enums.EngineType;
 import com.jml.reconciliation.model.enums.IssueType;
-import com.jml.reconciliation.model.enums.PermissionLevel;
-import com.jml.reconciliation.model.enums.RemediationActionType;
 import com.jml.reconciliation.model.enums.RiskLevel;
-
 import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -14,119 +11,94 @@ import java.time.LocalDateTime;
 public class ReconciliationIssue {
 
     @Id
-    @Column(name = "issue_id", length = 50)
-    private String issueId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(name = "user_id", nullable = false, length = 50)
-    private String userId;
+    @Column(nullable = false)
+    private String username;
 
-    @Column(name = "employee_name", nullable = false, length = 100)
-    private String employeeName;
-
-    @Column(name = "current_role", nullable = false, length = 50)
-    private String currentRole;
+    @Column(nullable = false)
+    private String fullName;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "issue_type", nullable = false, length = 50)
+    @Column(nullable = false)
     private IssueType issueType;
 
-    @Column(name = "application_name", nullable = false, length = 50)
-    private String applicationName;
-
     @Enumerated(EnumType.STRING)
-    @Column(name = "expected_access", length = 20)
-    private PermissionLevel expectedAccess;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "actual_access", length = 20)
-    private PermissionLevel actualAccess;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "risk_level", nullable = false, length = 20)
+    @Column(nullable = false)
     private RiskLevel riskLevel;
 
-    @Column(name = "confidence_score", nullable = false)
-    private double confidenceScore;
+    private String appName;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "engine_type", nullable = false, length = 20)
-    private EngineType engineType;
+    private Double dataConfidenceScore; // 0.0 - 1.0
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "recommended_action", nullable = false, length = 50)
-    private RemediationActionType recommendedAction;
+    @Column(length = 2000)
+    private String description;
 
-    @Column(nullable = false, length = 30)
-    private String status; // OPEN, PENDING_REVIEW, RESOLVED, ROLLED_BACK
+    @Column(length = 2000)
+    private String evidenceDetails;
 
-    @Column(name = "detected_at", nullable = false)
+    private Integer slaTargetMinutes;
+
+    private String detectionEngine; // PROTOTYPE or BASELINE
+
+    private Boolean safetyGateTriggered; // Routed to PENDING_APPROVAL
+
     private LocalDateTime detectedAt;
-
-    @Column(name = "remediated_at")
-    private LocalDateTime remediatedAt;
-
-    @Column(name = "remediation_time_minutes")
-    private Integer remediationTimeMinutes;
-
-    @Column(name = "target_time_minutes")
-    private Integer targetTimeMinutes;
-
-    @Column(name = "met_target")
-    private Boolean metTarget;
 
     public ReconciliationIssue() {}
 
-    public String getIssueId() { return issueId; }
-    public void setIssueId(String issueId) { this.issueId = issueId; }
+    public ReconciliationIssue(String username, String fullName, IssueType issueType, RiskLevel riskLevel, String appName, Double dataConfidenceScore, String description, String evidenceDetails, Integer slaTargetMinutes, String detectionEngine, Boolean safetyGateTriggered) {
+        this.username = username;
+        this.fullName = fullName;
+        this.issueType = issueType;
+        this.riskLevel = riskLevel;
+        this.appName = appName;
+        this.dataConfidenceScore = dataConfidenceScore;
+        this.description = description;
+        this.evidenceDetails = evidenceDetails;
+        this.slaTargetMinutes = slaTargetMinutes;
+        this.detectionEngine = detectionEngine;
+        this.safetyGateTriggered = safetyGateTriggered;
+        this.detectedAt = LocalDateTime.now();
+    }
 
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public String getEmployeeName() { return employeeName; }
-    public void setEmployeeName(String employeeName) { this.employeeName = employeeName; }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
 
-    public String getCurrentRole() { return currentRole; }
-    public void setCurrentRole(String currentRole) { this.currentRole = currentRole; }
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
 
     public IssueType getIssueType() { return issueType; }
     public void setIssueType(IssueType issueType) { this.issueType = issueType; }
 
-    public String getApplicationName() { return applicationName; }
-    public void setApplicationName(String applicationName) { this.applicationName = applicationName; }
-
-    public PermissionLevel getExpectedAccess() { return expectedAccess; }
-    public void setExpectedAccess(PermissionLevel expectedAccess) { this.expectedAccess = expectedAccess; }
-
-    public PermissionLevel getActualAccess() { return actualAccess; }
-    public void setActualAccess(PermissionLevel actualAccess) { this.actualAccess = actualAccess; }
-
     public RiskLevel getRiskLevel() { return riskLevel; }
     public void setRiskLevel(RiskLevel riskLevel) { this.riskLevel = riskLevel; }
 
-    public double getConfidenceScore() { return confidenceScore; }
-    public void setConfidenceScore(double confidenceScore) { this.confidenceScore = confidenceScore; }
+    public String getAppName() { return appName; }
+    public void setAppName(String appName) { this.appName = appName; }
 
-    public EngineType getEngineType() { return engineType; }
-    public void setEngineType(EngineType engineType) { this.engineType = engineType; }
+    public Double getDataConfidenceScore() { return dataConfidenceScore; }
+    public void setDataConfidenceScore(Double dataConfidenceScore) { this.dataConfidenceScore = dataConfidenceScore; }
 
-    public RemediationActionType getRecommendedAction() { return recommendedAction; }
-    public void setRecommendedAction(RemediationActionType recommendedAction) { this.recommendedAction = recommendedAction; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public String getEvidenceDetails() { return evidenceDetails; }
+    public void setEvidenceDetails(String evidenceDetails) { this.evidenceDetails = evidenceDetails; }
+
+    public Integer getSlaTargetMinutes() { return slaTargetMinutes; }
+    public void setSlaTargetMinutes(Integer slaTargetMinutes) { this.slaTargetMinutes = slaTargetMinutes; }
+
+    public String getDetectionEngine() { return detectionEngine; }
+    public void setDetectionEngine(String detectionEngine) { this.detectionEngine = detectionEngine; }
+
+    public Boolean getSafetyGateTriggered() { return safetyGateTriggered; }
+    public void setSafetyGateTriggered(Boolean safetyGateTriggered) { this.safetyGateTriggered = safetyGateTriggered; }
 
     public LocalDateTime getDetectedAt() { return detectedAt; }
     public void setDetectedAt(LocalDateTime detectedAt) { this.detectedAt = detectedAt; }
-
-    public LocalDateTime getRemediatedAt() { return remediatedAt; }
-    public void setRemediatedAt(LocalDateTime remediatedAt) { this.remediatedAt = remediatedAt; }
-
-    public Integer getRemediationTimeMinutes() { return remediationTimeMinutes; }
-    public void setRemediationTimeMinutes(Integer remediationTimeMinutes) { this.remediationTimeMinutes = remediationTimeMinutes; }
-
-    public Integer getTargetTimeMinutes() { return targetTimeMinutes; }
-    public void setTargetTimeMinutes(Integer targetTimeMinutes) { this.targetTimeMinutes = targetTimeMinutes; }
-
-    public Boolean getMetTarget() { return metTarget; }
-    public void setMetTarget(Boolean metTarget) { this.metTarget = metTarget; }
 }

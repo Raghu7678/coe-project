@@ -1,7 +1,7 @@
 package com.jml.reconciliation.service;
 
+import com.jml.reconciliation.dto.HealthOverrideRequest;
 import com.jml.reconciliation.entity.DataSourceHealth;
-import com.jml.reconciliation.model.enums.EventType;
 import com.jml.reconciliation.model.enums.HealthState;
 import com.jml.reconciliation.repository.DataSourceHealthRepository;
 import org.springframework.stereotype.Service;
@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class DataSourceHealthService {
@@ -22,55 +21,26 @@ public class DataSourceHealthService {
         this.auditService = auditService;
     }
 
-    public List<DataSourceHealth> getAllHealthStates() {
+    public List<DataSourceHealth> getAllHealth() {
         return healthRepository.findAll();
     }
 
-    public Optional<DataSourceHealth> getHealthState(String sourceName) {
-        return healthRepository.findById(sourceName);
-    }
-
     @Transactional
-    public DataSourceHealth updateHealthState(String sourceName, HealthState status, String freshness) {
-        DataSourceHealth health = healthRepository.findById(sourceName)
-                .orElse(new DataSourceHealth(sourceName, status, LocalDateTime.now(), freshness, 0));
+    public DataSourceHealth updateHealth(String sourceName, HealthOverrideRequest request) {
+        DataSourceHealth health = healthRepository.findBySourceName(sourceName)
+                .orElse(new DataSourceHealth(sourceName, HealthState.AVAILABLE, 25, 0.0));
 
-        HealthState oldStatus = health.getStatus();
-        health.setStatus(status);
-        if (freshness != null && !freshness.isEmpty()) {
-            health.setFreshness(freshness);
-        }
-        health.setLastUpdated(LocalDateTime.now());
+        health.setStatus(request.getStatus());
+        if (request.getLatencyMs() != null) health.setLatencyMs(request.getLatencyMs());
+        if (request.getStalenessHours() != null) health.setDataStalenessHours(request.getStalenessHours());
+        health.setLastSyncTime(LocalDateTime.now());
 
         DataSourceHealth saved = healthRepository.save(health);
 
-        auditService.logEvent(
-                EventType.DATA_SOURCE_HEALTH_CHANGED,
-                "SYSTEM",
-                "ADMIN",
-                "UPDATE_HEALTH_STATE",
-                "Status: " + oldStatus,
-                "Status: " + status + ", Freshness: " + saved.getFreshness(),
-                "Data source status changed via health management panel",
-                null, null, sourceName
-        );
+        auditService.logEvent("DATA_SOURCE_HEALTH_UPDATED", "ADMIN", sourceName,
+                String.format("Data feed %s status updated to %s (Latency: %dms, Staleness: %.1f hrs).",
+                        sourceName, request.getStatus(), health.getLatencyMs(), health.getDataStalenessHours()));
 
         return saved;
-    }
-
-    public double calculateOverallConfidenceMultiplier() {
-        List<DataSourceHealth> sources = healthRepository.findAll();
-        if (sources.isEmpty()) return 1.0;
-
-        double totalScore = 0.0;
-        for (DataSourceHealth source : sources) {
-            double score = 1.0;
-            if (source.getStatus() == HealthState.STALE) score = 0.7;
-            else if (source.getStatus() == HealthState.DELAYED) score = 0.5;
-            else if (source.getStatus() == HealthState.UNAVAILABLE) score = 0.2;
-            totalScore += score;
-        }
-
-        return Math.max(0.1, totalScore / sources.size());
     }
 }

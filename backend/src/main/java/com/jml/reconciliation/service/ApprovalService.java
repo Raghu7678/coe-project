@@ -1,102 +1,78 @@
 package com.jml.reconciliation.service;
 
-import com.jml.reconciliation.entity.AuditEvent;
-import com.jml.reconciliation.entity.ReconciliationIssue;
+import com.jml.reconciliation.dto.ApprovalDecisionRequest;
+import com.jml.reconciliation.entity.ApprovalRecord;
 import com.jml.reconciliation.entity.RemediationAction;
-import com.jml.reconciliation.model.enums.EventType;
 import com.jml.reconciliation.model.enums.RemediationStatus;
-import com.jml.reconciliation.repository.ReconciliationIssueRepository;
+import com.jml.reconciliation.repository.ApprovalRecordRepository;
 import com.jml.reconciliation.repository.RemediationActionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class ApprovalService {
 
-    private final RemediationActionRepository remediationRepository;
-    private final ReconciliationIssueRepository issueRepository;
-    private final RemediationService remediationService;
+    private final RemediationActionRepository actionRepository;
+    private final ApprovalRecordRepository approvalRepository;
     private final AuditService auditService;
 
-    public ApprovalService(RemediationActionRepository remediationRepository,
-                           ReconciliationIssueRepository issueRepository,
-                           RemediationService remediationService,
-                           AuditService auditService) {
-        this.remediationRepository = remediationRepository;
-        this.issueRepository = issueRepository;
-        this.remediationService = remediationService;
+    public ApprovalService(
+            RemediationActionRepository actionRepository,
+            ApprovalRecordRepository approvalRepository,
+            AuditService auditService) {
+        this.actionRepository = actionRepository;
+        this.approvalRepository = approvalRepository;
         this.auditService = auditService;
     }
 
     public List<RemediationAction> getPendingApprovals() {
-        return remediationRepository.findByStatus(RemediationStatus.PENDING_REVIEW);
+        return actionRepository.findByStatus(RemediationStatus.PENDING_APPROVAL);
     }
 
     @Transactional
-    public RemediationAction processApprovalDecision(String remediationId, String reviewerId, String decision, String comment) {
-        RemediationAction remediation = remediationRepository.findById(remediationId)
-                .orElseThrow(() -> new IllegalArgumentException("Remediation action not found with ID: " + remediationId));
+    public RemediationAction processDecision(Long actionId, ApprovalDecisionRequest request) {
+        RemediationAction action = actionRepository.findById(actionId)
+                .orElseThrow(() -> new IllegalArgumentException("Remediation action not found with ID: " + actionId));
 
-        if (remediation.getStatus() != RemediationStatus.PENDING_REVIEW && remediation.getStatus() != RemediationStatus.RECOMMENDED) {
-            throw new IllegalStateException("Remediation is not in PENDING_REVIEW or RECOMMENDED status");
+        if (action.getStatus() != RemediationStatus.PENDING_APPROVAL) {
+            throw new IllegalStateException("Action is not in PENDING_APPROVAL status. Current status: " + action.getStatus());
         }
 
-        // Enforce Accountable Approval (Prevent requester approving own action if applicable)
-        if (reviewerId != null && reviewerId.equalsIgnoreCase(remediation.getRequestedBy())) {
-            throw new IllegalArgumentException("Accountable Approval Violation: Requester cannot approve their own remediation action");
+        // Enforce Accountable Approvals: Self-Approval Prevention
+        if (request.getReviewerId() != null && request.getReviewerId().equalsIgnoreCase(action.getInitiatedBy())) {
+            throw new IllegalArgumentException("Self-approval is strictly forbidden under dual-control accountable approval policy.");
         }
 
-        remediation.setApprovedBy(reviewerId);
-        remediation.setReviewerComment(comment);
+        boolean isApproved = "APPROVED".equalsIgnoreCase(request.getDecision());
 
-        if ("APPROVE".equalsIgnoreCase(decision)) {
-            remediation.setStatus(RemediationStatus.APPROVED);
-            remediationRepository.save(remediation);
+        ApprovalRecord record = new ApprovalRecord(
+                "APP-" + System.currentTimeMillis(),
+                action.getUsername(),
+                action.getAppName(),
+                action.getTargetPermissionLevel(),
+                action.getInitiatedBy(),
+                request.getReviewerId(),
+                LocalDateTime.now(),
+                isApproved ? "APPROVED" : "REJECTED",
+                request.getComments()
+        );
+        approvalRepository.save(record);
 
-            auditService.logEvent(
-                    EventType.APPROVAL_GRANTED,
-                    remediation.getUserId(),
-                    reviewerId,
-                    "APPROVE_REMEDIATION",
-                    "Status: PENDING_REVIEW",
-                    "Status: APPROVED",
-                    comment,
-                    remediation.getIssueId(),
-                    remediation.getRemediationId(),
-                    "HR, DIRECTORY, APPLICATION_ENTITLEMENTS, APPROVAL_HISTORY"
-            );
+        action.setApprovedBy(request.getReviewerId());
+        action.setStatus(isApproved ? RemediationStatus.APPROVED : RemediationStatus.REJECTED);
+        RemediationAction updated = actionRepository.save(action);
 
-            // Execute the remediation immediately upon approval
-            return remediationService.executeRemediation(remediation.getRemediationId(), reviewerId);
+        auditService.logEvent(
+                isApproved ? "APPROVAL_GRANTED" : "APPROVAL_REJECTED",
+                request.getReviewerId(),
+                action.getUsername(),
+                String.format("Action #%d (%s on %s) for %s decision: %s. Rationale: %s",
+                        actionId, action.getActionType(), action.getAppName(), action.getFullName(), isApproved ? "APPROVED" : "REJECTED", request.getComments())
+        );
 
-        } else if ("REJECT".equalsIgnoreCase(decision)) {
-            remediation.setStatus(RemediationStatus.REJECTED);
-            RemediationAction saved = remediationRepository.save(remediation);
-
-            // Update associated issue status
-            issueRepository.findById(remediation.getIssueId()).ifPresent(issue -> {
-                issue.setStatus("REJECTED");
-                issueRepository.save(issue);
-            });
-
-            auditService.logEvent(
-                    EventType.APPROVAL_REJECTED,
-                    remediation.getUserId(),
-                    reviewerId,
-                    "REJECT_REMEDIATION",
-                    "Status: PENDING_REVIEW",
-                    "Status: REJECTED",
-                    comment,
-                    remediation.getIssueId(),
-                    remediation.getRemediationId(),
-                    "HR, DIRECTORY, APPLICATION_ENTITLEMENTS, APPROVAL_HISTORY"
-            );
-
-            return saved;
-        } else {
-            throw new IllegalArgumentException("Invalid decision value. Expected 'APPROVE' or 'REJECT'");
-        }
+        return updated;
     }
 }

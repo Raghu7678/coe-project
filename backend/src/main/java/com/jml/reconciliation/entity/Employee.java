@@ -2,6 +2,7 @@ package com.jml.reconciliation.entity;
 
 import com.jml.reconciliation.model.enums.EmploymentStatus;
 import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -9,66 +10,60 @@ import java.time.LocalDateTime;
 public class Employee {
 
     @Id
-    @Column(name = "employee_id", length = 50)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true)
     private String employeeId;
 
-    @Column(name = "user_id", length = 50, nullable = false, unique = true)
-    private String userId;
+    @Column(nullable = false)
+    private String username;
 
-    @Column(nullable = false, length = 100)
-    private String name;
+    @Column(nullable = false)
+    private String fullName;
 
-    @Column(nullable = false, length = 100)
     private String email;
 
-    @Column(nullable = false, length = 50)
     private String department;
 
-    @Column(name = "current_role", nullable = false, length = 50)
     private String currentRole;
 
-    @Column(name = "previous_role", length = 50)
     private String previousRole;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "employment_status", nullable = false, length = 20)
-    private EmploymentStatus employmentStatus;
+    @Column(nullable = false)
+    private EmploymentStatus status;
 
-    @Column(name = "join_date", nullable = false)
-    private LocalDateTime joinDate;
+    private LocalDateTime hiredAt;
 
-    @Column(name = "last_role_change_date")
-    private LocalDateTime lastRoleChangeDate;
-
-    @Column(name = "last_updated")
-    private LocalDateTime lastUpdated;
+    private LocalDateTime lastRoleChangeAt;
 
     public Employee() {}
 
-    public Employee(String employeeId, String userId, String name, String email, String department, 
-                    String currentRole, String previousRole, EmploymentStatus employmentStatus, 
-                    LocalDateTime joinDate, LocalDateTime lastRoleChangeDate, LocalDateTime lastUpdated) {
+    public Employee(String employeeId, String username, String fullName, String email, String department, String currentRole, String previousRole, EmploymentStatus status, LocalDateTime hiredAt, LocalDateTime lastRoleChangeAt) {
         this.employeeId = employeeId;
-        this.userId = userId;
-        this.name = name;
+        this.username = username;
+        this.fullName = fullName;
         this.email = email;
         this.department = department;
         this.currentRole = currentRole;
         this.previousRole = previousRole;
-        this.employmentStatus = employmentStatus;
-        this.joinDate = joinDate;
-        this.lastRoleChangeDate = lastRoleChangeDate;
-        this.lastUpdated = lastUpdated;
+        this.status = status;
+        this.hiredAt = hiredAt;
+        this.lastRoleChangeAt = lastRoleChangeAt;
     }
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
     public String getEmployeeId() { return employeeId; }
     public void setEmployeeId(String employeeId) { this.employeeId = employeeId; }
 
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
@@ -82,15 +77,12 @@ public class Employee {
     public String getPreviousRole() { return previousRole; }
     public void setPreviousRole(String previousRole) { this.previousRole = previousRole; }
 
-    public EmploymentStatus getEmploymentStatus() { return employmentStatus; }
-    public void setEmploymentStatus(EmploymentStatus employmentStatus) { this.employmentStatus = employmentStatus; }
+    public EmploymentStatus getStatus() { return status; }
+    public void setStatus(EmploymentStatus status) { this.status = status; }
 
-    public LocalDateTime getJoinDate() { return joinDate; }
-    public void setJoinDate(LocalDateTime joinDate) { this.joinDate = joinDate; }
+    public LocalDateTime getHiredAt() { return hiredAt; }
+    public void setHiredAt(LocalDateTime hiredAt) { this.hiredAt = hiredAt; }
 
-    public LocalDateTime getLastRoleChangeDate() { return lastRoleChangeDate; }
-    public void setLastRoleChangeDate(LocalDateTime lastRoleChangeDate) { this.lastRoleChangeDate = lastRoleChangeDate; }
-
-    public LocalDateTime getLastUpdated() { return lastUpdated; }
-    public void setLastUpdated(LocalDateTime lastUpdated) { this.lastUpdated = lastUpdated; }
+    public LocalDateTime getLastRoleChangeAt() { return lastRoleChangeAt; }
+    public void setLastRoleChangeAt(LocalDateTime lastRoleChangeAt) { this.lastRoleChangeAt = lastRoleChangeAt; }
 }

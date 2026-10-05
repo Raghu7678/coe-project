@@ -2,6 +2,7 @@ package com.jml.reconciliation.entity;
 
 import com.jml.reconciliation.model.enums.HealthState;
 import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -9,31 +10,34 @@ import java.time.LocalDateTime;
 public class DataSourceHealth {
 
     @Id
-    @Column(name = "source_name", length = 50)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true)
     private String sourceName; // HR, DIRECTORY, APPLICATION_ENTITLEMENTS, APPROVAL_HISTORY
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false)
     private HealthState status;
 
-    @Column(name = "last_updated", nullable = false)
-    private LocalDateTime lastUpdated;
+    private Integer latencyMs;
 
-    @Column(nullable = false, length = 20)
-    private String freshness; // FRESH, STALE, UNKNOWN
+    private Double dataStalenessHours;
 
-    @Column(name = "records_count")
-    private Integer recordsCount;
+    private LocalDateTime lastSyncTime;
 
     public DataSourceHealth() {}
 
-    public DataSourceHealth(String sourceName, HealthState status, LocalDateTime lastUpdated, String freshness, Integer recordsCount) {
+    public DataSourceHealth(String sourceName, HealthState status, Integer latencyMs, Double dataStalenessHours) {
         this.sourceName = sourceName;
         this.status = status;
-        this.lastUpdated = lastUpdated;
-        this.freshness = freshness;
-        this.recordsCount = recordsCount;
+        this.latencyMs = latencyMs;
+        this.dataStalenessHours = dataStalenessHours;
+        this.lastSyncTime = LocalDateTime.now();
     }
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
     public String getSourceName() { return sourceName; }
     public void setSourceName(String sourceName) { this.sourceName = sourceName; }
@@ -41,12 +45,12 @@ public class DataSourceHealth {
     public HealthState getStatus() { return status; }
     public void setStatus(HealthState status) { this.status = status; }
 
-    public LocalDateTime getLastUpdated() { return lastUpdated; }
-    public void setLastUpdated(LocalDateTime lastUpdated) { this.lastUpdated = lastUpdated; }
+    public Integer getLatencyMs() { return latencyMs; }
+    public void setLatencyMs(Integer latencyMs) { this.latencyMs = latencyMs; }
 
-    public String getFreshness() { return freshness; }
-    public void setFreshness(String freshness) { this.freshness = freshness; }
+    public Double getDataStalenessHours() { return dataStalenessHours; }
+    public void setDataStalenessHours(Double dataStalenessHours) { this.dataStalenessHours = dataStalenessHours; }
 
-    public Integer getRecordsCount() { return recordsCount; }
-    public void setRecordsCount(Integer recordsCount) { this.recordsCount = recordsCount; }
+    public LocalDateTime getLastSyncTime() { return lastSyncTime; }
+    public void setLastSyncTime(LocalDateTime lastSyncTime) { this.lastSyncTime = lastSyncTime; }
 }

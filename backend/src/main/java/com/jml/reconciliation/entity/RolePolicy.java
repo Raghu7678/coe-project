@@ -4,35 +4,32 @@ import com.jml.reconciliation.model.enums.PermissionLevel;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "role_policies", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"role_name", "application_name"})
-})
+@Table(name = "role_policies")
 public class RolePolicy {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "role_name", nullable = false, length = 50)
+    @Column(nullable = false)
     private String roleName;
 
-    @Column(name = "application_name", nullable = false, length = 50)
-    private String applicationName;
+    @Column(nullable = false)
+    private String appName;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "expected_permission", nullable = false, length = 20)
-    private PermissionLevel expectedPermission;
+    @Column(nullable = false)
+    private PermissionLevel requiredPermission;
 
-    @Column(name = "is_required")
-    private boolean required = true;
+    private Boolean mandatory;
 
     public RolePolicy() {}
 
-    public RolePolicy(String roleName, String applicationName, PermissionLevel expectedPermission, boolean required) {
+    public RolePolicy(String roleName, String appName, PermissionLevel requiredPermission, Boolean mandatory) {
         this.roleName = roleName;
-        this.applicationName = applicationName;
-        this.expectedPermission = expectedPermission;
-        this.required = required;
+        this.appName = appName;
+        this.requiredPermission = requiredPermission;
+        this.mandatory = mandatory;
     }
 
     public Long getId() { return id; }
@@ -41,12 +38,12 @@ public class RolePolicy {
     public String getRoleName() { return roleName; }
     public void setRoleName(String roleName) { this.roleName = roleName; }
 
-    public String getApplicationName() { return applicationName; }
-    public void setApplicationName(String applicationName) { this.applicationName = applicationName; }
+    public String getAppName() { return appName; }
+    public void setAppName(String appName) { this.appName = appName; }
 
-    public PermissionLevel getExpectedPermission() { return expectedPermission; }
-    public void setExpectedPermission(PermissionLevel expectedPermission) { this.expectedPermission = expectedPermission; }
+    public PermissionLevel getRequiredPermission() { return requiredPermission; }
+    public void setRequiredPermission(PermissionLevel requiredPermission) { this.requiredPermission = requiredPermission; }
 
-    public boolean isRequired() { return required; }
-    public void setRequired(boolean required) { this.required = required; }
+    public Boolean getMandatory() { return mandatory; }
+    public void setMandatory(Boolean mandatory) { this.mandatory = mandatory; }
 }

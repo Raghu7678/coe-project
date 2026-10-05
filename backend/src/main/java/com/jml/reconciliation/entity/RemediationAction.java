@@ -1,8 +1,9 @@
 package com.jml.reconciliation.entity;
 
-import com.jml.reconciliation.model.enums.RemediationActionType;
+import com.jml.reconciliation.model.enums.PermissionLevel;
 import com.jml.reconciliation.model.enums.RemediationStatus;
 import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -10,87 +11,106 @@ import java.time.LocalDateTime;
 public class RemediationAction {
 
     @Id
-    @Column(name = "remediation_id", length = 50)
-    private String remediationId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(name = "issue_id", nullable = false, length = 50)
-    private String issueId;
+    @Column(nullable = false)
+    private Long issueId;
 
-    @Column(name = "user_id", nullable = false, length = 50)
-    private String userId;
+    @Column(nullable = false)
+    private String username;
 
-    @Column(name = "application_name", nullable = false, length = 50)
-    private String applicationName;
+    @Column(nullable = false)
+    private String fullName;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "action_type", nullable = false, length = 50)
-    private RemediationActionType actionType;
+    private String actionType; // REVOKE_ORPHANED_ACCESS, DOWNGRADE_EXCESSIVE_PRIVILEGES, REVOKE_UNAPPROVED_ACCESS, GRANT_MISSING_REQUIRED_ACCESS
 
-    @Column(name = "previous_state", nullable = false, length = 100)
-    private String previousState;
-
-    @Column(name = "proposed_state", nullable = false, length = 100)
-    private String proposedState;
+    private String appName;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
+    @Column(nullable = false)
     private RemediationStatus status;
 
-    @Column(name = "requested_by", nullable = false, length = 50)
-    private String requestedBy;
+    @Enumerated(EnumType.STRING)
+    private PermissionLevel previousPermissionLevel;
 
-    @Column(name = "approved_by", length = 50)
+    @Enumerated(EnumType.STRING)
+    private PermissionLevel targetPermissionLevel;
+
+    @Column(length = 2000)
+    private String rationale;
+
+    private String initiatedBy;
+
     private String approvedBy;
 
-    @Column(name = "reviewer_comment", columnDefinition = "TEXT")
-    private String reviewerComment;
-
-    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "executed_at")
     private LocalDateTime executedAt;
 
-    @Column(name = "rolled_back_at")
     private LocalDateTime rolledBackAt;
 
-    @Column(name = "rollback_reason", columnDefinition = "TEXT")
-    private String rollbackReason;
+    private Boolean stakeholderValidated = false;
+
+    private String validatedBy;
+
+    @Column(length = 2000)
+    private String validationNotes;
+
+    private LocalDateTime validatedAt;
 
     public RemediationAction() {}
 
-    public String getRemediationId() { return remediationId; }
-    public void setRemediationId(String remediationId) { this.remediationId = remediationId; }
+    public RemediationAction(Long issueId, String username, String fullName, String actionType, String appName, RemediationStatus status, PermissionLevel previousPermissionLevel, PermissionLevel targetPermissionLevel, String rationale, String initiatedBy) {
+        this.issueId = issueId;
+        this.username = username;
+        this.fullName = fullName;
+        this.actionType = actionType;
+        this.appName = appName;
+        this.status = status;
+        this.previousPermissionLevel = previousPermissionLevel;
+        this.targetPermissionLevel = targetPermissionLevel;
+        this.rationale = rationale;
+        this.initiatedBy = initiatedBy;
+        this.createdAt = LocalDateTime.now();
+        this.stakeholderValidated = false;
+    }
 
-    public String getIssueId() { return issueId; }
-    public void setIssueId(String issueId) { this.issueId = issueId; }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
+    public Long getIssueId() { return issueId; }
+    public void setIssueId(Long issueId) { this.issueId = issueId; }
 
-    public String getApplicationName() { return applicationName; }
-    public void setApplicationName(String applicationName) { this.applicationName = applicationName; }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
 
-    public RemediationActionType getActionType() { return actionType; }
-    public void setActionType(RemediationActionType actionType) { this.actionType = actionType; }
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
 
-    public String getPreviousState() { return previousState; }
-    public void setPreviousState(String previousState) { this.previousState = previousState; }
+    public String getActionType() { return actionType; }
+    public void setActionType(String actionType) { this.actionType = actionType; }
 
-    public String getProposedState() { return proposedState; }
-    public void setProposedState(String proposedState) { this.proposedState = proposedState; }
+    public String getAppName() { return appName; }
+    public void setAppName(String appName) { this.appName = appName; }
 
     public RemediationStatus getStatus() { return status; }
     public void setStatus(RemediationStatus status) { this.status = status; }
 
-    public String getRequestedBy() { return requestedBy; }
-    public void setRequestedBy(String requestedBy) { this.requestedBy = requestedBy; }
+    public PermissionLevel getPreviousPermissionLevel() { return previousPermissionLevel; }
+    public void setPreviousPermissionLevel(PermissionLevel previousPermissionLevel) { this.previousPermissionLevel = previousPermissionLevel; }
+
+    public PermissionLevel getTargetPermissionLevel() { return targetPermissionLevel; }
+    public void setTargetPermissionLevel(PermissionLevel targetPermissionLevel) { this.targetPermissionLevel = targetPermissionLevel; }
+
+    public String getRationale() { return rationale; }
+    public void setRationale(String rationale) { this.rationale = rationale; }
+
+    public String getInitiatedBy() { return initiatedBy; }
+    public void setInitiatedBy(String initiatedBy) { this.initiatedBy = initiatedBy; }
 
     public String getApprovedBy() { return approvedBy; }
     public void setApprovedBy(String approvedBy) { this.approvedBy = approvedBy; }
-
-    public String getReviewerComment() { return reviewerComment; }
-    public void setReviewerComment(String reviewerComment) { this.reviewerComment = reviewerComment; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
@@ -101,6 +121,15 @@ public class RemediationAction {
     public LocalDateTime getRolledBackAt() { return rolledBackAt; }
     public void setRolledBackAt(LocalDateTime rolledBackAt) { this.rolledBackAt = rolledBackAt; }
 
-    public String getRollbackReason() { return rollbackReason; }
-    public void setRollbackReason(String rollbackReason) { this.rollbackReason = rollbackReason; }
+    public Boolean getStakeholderValidated() { return stakeholderValidated; }
+    public void setStakeholderValidated(Boolean stakeholderValidated) { this.stakeholderValidated = stakeholderValidated; }
+
+    public String getValidatedBy() { return validatedBy; }
+    public void setValidatedBy(String validatedBy) { this.validatedBy = validatedBy; }
+
+    public String getValidationNotes() { return validationNotes; }
+    public void setValidationNotes(String validationNotes) { this.validationNotes = validationNotes; }
+
+    public LocalDateTime getValidatedAt() { return validatedAt; }
+    public void setValidatedAt(LocalDateTime validatedAt) { this.validatedAt = validatedAt; }
 }

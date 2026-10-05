@@ -1,200 +1,155 @@
 package com.jml.reconciliation.config;
 
 import com.jml.reconciliation.entity.*;
+
 import com.jml.reconciliation.model.enums.*;
 import com.jml.reconciliation.repository.*;
-import com.jml.reconciliation.service.BaselineEngineService;
 import com.jml.reconciliation.service.ReconciliationEngineService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
 
     private final EmployeeRepository employeeRepository;
-    private final RolePolicyRepository rolePolicyRepository;
-    private final DirectoryGroupRepository directoryGroupRepository;
     private final EntitlementRepository entitlementRepository;
-    private final ApprovalRecordRepository approvalRecordRepository;
+    private final DirectoryGroupRepository directoryGroupRepository;
+    private final ApprovalRecordRepository approvalRepository;
+    private final RolePolicyRepository rolePolicyRepository;
     private final DataSourceHealthRepository healthRepository;
     private final ReconciliationEngineService reconciliationEngineService;
-    private final BaselineEngineService baselineEngineService;
 
-    public DataInitializer(EmployeeRepository employeeRepository,
-                           RolePolicyRepository rolePolicyRepository,
-                           DirectoryGroupRepository directoryGroupRepository,
-                           EntitlementRepository entitlementRepository,
-                           ApprovalRecordRepository approvalRecordRepository,
-                           DataSourceHealthRepository healthRepository,
-                           ReconciliationEngineService reconciliationEngineService,
-                           BaselineEngineService baselineEngineService) {
+    public DataInitializer(
+            EmployeeRepository employeeRepository,
+            EntitlementRepository entitlementRepository,
+            DirectoryGroupRepository directoryGroupRepository,
+            ApprovalRecordRepository approvalRepository,
+            RolePolicyRepository rolePolicyRepository,
+            DataSourceHealthRepository healthRepository,
+            ReconciliationEngineService reconciliationEngineService) {
         this.employeeRepository = employeeRepository;
-        this.rolePolicyRepository = rolePolicyRepository;
-        this.directoryGroupRepository = directoryGroupRepository;
         this.entitlementRepository = entitlementRepository;
-        this.approvalRecordRepository = approvalRecordRepository;
+        this.directoryGroupRepository = directoryGroupRepository;
+        this.approvalRepository = approvalRepository;
+        this.rolePolicyRepository = rolePolicyRepository;
         this.healthRepository = healthRepository;
         this.reconciliationEngineService = reconciliationEngineService;
-        this.baselineEngineService = baselineEngineService;
     }
 
     @Override
-    @Transactional
     public void run(String... args) throws Exception {
-        if (employeeRepository.count() > 0) {
-            return;
+        if (employeeRepository.count() > 0) return;
+
+        // 1. Data Feeds Health Initialization
+        healthRepository.save(new DataSourceHealth("HR", HealthState.AVAILABLE, 25, 0.5));
+        healthRepository.save(new DataSourceHealth("DIRECTORY", HealthState.AVAILABLE, 30, 1.0));
+        healthRepository.save(new DataSourceHealth("APPLICATION_ENTITLEMENTS", HealthState.AVAILABLE, 20, 0.2));
+        healthRepository.save(new DataSourceHealth("APPROVAL_HISTORY", HealthState.AVAILABLE, 15, 0.1));
+
+        // 2. Seed Role Policies
+        rolePolicyRepository.save(new RolePolicy("Developer", "GitHub", PermissionLevel.WRITE, true));
+        rolePolicyRepository.save(new RolePolicy("Developer", "Jira", PermissionLevel.READ, true));
+        rolePolicyRepository.save(new RolePolicy("HR Manager", "HR System", PermissionLevel.ADMIN, true));
+        rolePolicyRepository.save(new RolePolicy("HR Manager", "Jira", PermissionLevel.READ, true));
+        rolePolicyRepository.save(new RolePolicy("Finance Analyst", "Finance System", PermissionLevel.READ, true));
+        rolePolicyRepository.save(new RolePolicy("Finance Analyst", "Jira", PermissionLevel.READ, true));
+        rolePolicyRepository.save(new RolePolicy("System Administrator", "AWS Console", PermissionLevel.ADMIN, true));
+        rolePolicyRepository.save(new RolePolicy("System Administrator", "GitHub", PermissionLevel.ADMIN, true));
+
+        // 3. Seed Synthetic Users & Ground Truth Anomalies
+        LocalDateTime now = LocalDateTime.now();
+
+        // Synthetic Test Case 1: Mover (Developer -> HR Manager) with leftover GitHub ADMIN
+        createEmployeeWithAccess(
+                "EMP-1001", "usr_alex", "Alex Mercer", "alex.mercer@saas.com", "HR",
+                "HR Manager", "Developer", EmploymentStatus.ROLE_MOVER,
+                now.minusYears(2), now.minusDays(10),
+                Map.of("HR System", PermissionLevel.ADMIN, "GitHub", PermissionLevel.ADMIN, "Jira", PermissionLevel.READ),
+                List.of("engineering-dev", "hr-managers"),
+                List.of(new ApprovalRecord("APP-101", "usr_alex", "HR System", PermissionLevel.ADMIN, "usr_alex", "sec_admin", now.minusDays(10), "APPROVED", "Role transition approval"))
+        );
+
+        // Synthetic Test Case 2: Orphaned Leaver
+        createEmployeeWithAccess(
+                "EMP-1002", "usr_sarah", "Sarah Jenkins", "sarah.jenkins@saas.com", "Finance",
+                "Finance Analyst", "Finance Analyst", EmploymentStatus.LEFT,
+                now.minusYears(3), now.minusDays(15),
+                Map.of("Finance System", PermissionLevel.WRITE, "Jira", PermissionLevel.READ),
+                List.of("finance-team"),
+                List.of(new ApprovalRecord("APP-102", "usr_sarah", "Finance System", PermissionLevel.WRITE, "usr_sarah", "fin_lead", now.minusYears(1), "APPROVED", "Finance onboard"))
+        );
+
+        // Synthetic Test Case 3: Unapproved Privileged Access
+        createEmployeeWithAccess(
+                "EMP-1003", "usr_david", "David Vance", "david.vance@saas.com", "Engineering",
+                "Developer", "Developer", EmploymentStatus.ACTIVE,
+                now.minusYears(1), now.minusMonths(6),
+                Map.of("AWS Console", PermissionLevel.ADMIN, "GitHub", PermissionLevel.WRITE, "Jira", PermissionLevel.READ),
+                List.of("engineering-dev"),
+                List.of()
+        );
+
+        // Synthetic Test Case 4: Critical Leaver (AWS ADMIN)
+        createEmployeeWithAccess(
+                "EMP-1004", "usr_marcus", "Marcus Brody", "marcus.brody@saas.com", "IT",
+                "System Administrator", "System Administrator", EmploymentStatus.LEFT,
+                now.minusYears(4), now.minusDays(2),
+                Map.of("AWS Console", PermissionLevel.ADMIN, "GitHub", PermissionLevel.ADMIN),
+                List.of("sysadmins"),
+                List.of(new ApprovalRecord("APP-104", "usr_marcus", "AWS Console", PermissionLevel.ADMIN, "usr_marcus", "cto", now.minusYears(3), "APPROVED", "SysAdmin access"))
+        );
+
+        // Seed 36 Additional Synthetic Active Employees
+        for (int i = 5; i <= 40; i++) {
+            String empId = String.format("EMP-%04d", 1000 + i);
+            String uname = "usr_emp" + i;
+            String name = "User " + i;
+            String dept = (i % 4 == 0) ? "Engineering" : ((i % 4 == 1) ? "HR" : ((i % 4 == 2) ? "Finance" : "IT"));
+            String role = (i % 4 == 0) ? "Developer" : ((i % 4 == 1) ? "HR Manager" : ((i % 4 == 2) ? "Finance Analyst" : "System Administrator"));
+            EmploymentStatus status = (i % 8 == 0) ? EmploymentStatus.LEFT : ((i % 10 == 0) ? EmploymentStatus.ROLE_MOVER : EmploymentStatus.ACTIVE);
+
+            String mainApp = (i % 4 == 0) ? "GitHub" : ((i % 4 == 1) ? "HR System" : ((i % 4 == 2) ? "Finance System" : "AWS Console"));
+            PermissionLevel perm = (role.equals("System Administrator") || role.equals("HR Manager")) ? PermissionLevel.ADMIN : PermissionLevel.WRITE;
+
+            createEmployeeWithAccess(
+                    empId, uname, name, uname + "@saas.com", dept,
+                    role, role, status,
+                    now.minusMonths(i), now.minusDays(i),
+                    Map.of(mainApp, perm, "Jira", PermissionLevel.READ),
+                    List.of(dept.toLowerCase() + "-group"),
+                    List.of(new ApprovalRecord("APP-" + i, uname, mainApp, perm, uname, "manager", now.minusMonths(i), "APPROVED", "Standard onboarding"))
+            );
         }
 
-        seedDataSourcesHealth();
-        seedRolePolicies();
-        seedEmployeesAndEntitlements();
-
-        // Run initial reconciliation for baseline & prototype so dashboard has rich data out of the box!
-        baselineEngineService.runBaselineReconciliation();
+        // Initial Reconciliation Run
         reconciliationEngineService.runReconciliation();
     }
 
-    private void seedDataSourcesHealth() {
-        healthRepository.save(new DataSourceHealth("HR", HealthState.AVAILABLE, LocalDateTime.now(), "Fresh", 40));
-        healthRepository.save(new DataSourceHealth("DIRECTORY", HealthState.AVAILABLE, LocalDateTime.now(), "Fresh", 40));
-        healthRepository.save(new DataSourceHealth("APPLICATION_ENTITLEMENTS", HealthState.AVAILABLE, LocalDateTime.now(), "Fresh", 80));
-        healthRepository.save(new DataSourceHealth("APPROVAL_HISTORY", HealthState.AVAILABLE, LocalDateTime.now(), "Fresh", 50));
-    }
+    private void createEmployeeWithAccess(
+            String empId, String username, String fullName, String email, String department,
+            String currentRole, String previousRole, EmploymentStatus status,
+            LocalDateTime hiredAt, LocalDateTime roleChangeAt,
+            Map<String, PermissionLevel> entitlements,
+            List<String> directoryGroups,
+            List<ApprovalRecord> approvals) {
 
-    private void seedRolePolicies() {
-        // Developer
-        rolePolicyRepository.save(new RolePolicy("Developer", "GitHub", PermissionLevel.WRITE, true));
-        rolePolicyRepository.save(new RolePolicy("Developer", "Jira", PermissionLevel.USER, true));
-
-        // HR Manager
-        rolePolicyRepository.save(new RolePolicy("HR Manager", "HR System", PermissionLevel.ADMIN, true));
-        rolePolicyRepository.save(new RolePolicy("HR Manager", "Jira", PermissionLevel.USER, true));
-
-        // Finance Analyst
-        rolePolicyRepository.save(new RolePolicy("Finance Analyst", "Finance System", PermissionLevel.READ, true));
-        rolePolicyRepository.save(new RolePolicy("Finance Analyst", "Jira", PermissionLevel.USER, true));
-
-        // Product Manager
-        rolePolicyRepository.save(new RolePolicy("Product Manager", "Jira", PermissionLevel.ADMIN, true));
-        rolePolicyRepository.save(new RolePolicy("Product Manager", "GitHub", PermissionLevel.READ, true));
-
-        // System Administrator
-        rolePolicyRepository.save(new RolePolicy("System Administrator", "AWS Console", PermissionLevel.ADMIN, true));
-        rolePolicyRepository.save(new RolePolicy("System Administrator", "GitHub", PermissionLevel.ADMIN, true));
-    }
-
-    private void seedEmployeesAndEntitlements() {
-        LocalDateTime now = LocalDateTime.now();
-
-        // Specific Synthetic Test Case 1: Mover (Developer -> HR Manager) with leftover GitHub ADMIN
-        createEmployeeWithAccess(
-                "EMP-1001", "usr_alex", "Alex Mercer", "alex.mercer@saas.com", "HR",
-                "HR Manager", "Developer", EmploymentStatus.ACTIVE,
-                now.minusYears(2), now.minusDays(10),
-                Map.of("HR System", PermissionLevel.ADMIN, "GitHub", PermissionLevel.ADMIN, "Jira", PermissionLevel.USER),
-                Map.of("GitHub", PermissionLevel.ADMIN),
-                List.of(new ApprovalRecord("APP-101", "usr_alex", "HR System", PermissionLevel.ADMIN, "usr_alex", "sec_admin", now.minusDays(10), ApprovalStatus.APPROVED, "Role transition approval"))
-        );
-
-        // Specific Synthetic Test Case 2: Leaver (LEFT) with active VPN & Finance access
-        createEmployeeWithAccess(
-                "EMP-1002", "usr_sarah", "Sarah Jenkins", "sarah.j@saas.com", "Finance",
-                "Finance Analyst", null, EmploymentStatus.LEFT,
-                now.minusYears(3), null,
-                Map.of("Finance System", PermissionLevel.WRITE, "AWS Console", PermissionLevel.READ),
-                Map.of("Finance System", PermissionLevel.WRITE),
-                List.of()
-        );
-
-        // Specific Synthetic Test Case 3: Active User with Unapproved AWS ADMIN access
-        createEmployeeWithAccess(
-                "EMP-1003", "usr_david", "David Vance", "david.v@saas.com", "Engineering",
-                "Developer", null, EmploymentStatus.ACTIVE,
-                now.minusYears(1), null,
-                Map.of("GitHub", PermissionLevel.WRITE, "AWS Console", PermissionLevel.ADMIN),
-                Map.of("GitHub", PermissionLevel.WRITE),
-                List.of(new ApprovalRecord("APP-103", "usr_david", "GitHub", PermissionLevel.WRITE, "usr_david", "lead_eng", now.minusMonths(6), ApprovalStatus.APPROVED, "Standard onboarding"))
-        );
-
-        // Specific Synthetic Test Case 4: Leaver with Critical ADMIN Access
-        createEmployeeWithAccess(
-                "EMP-1004", "usr_marcus", "Marcus Brody", "marcus.b@saas.com", "IT Security",
-                "System Administrator", null, EmploymentStatus.LEFT,
-                now.minusYears(4), null,
-                Map.of("AWS Console", PermissionLevel.ADMIN, "GitHub", PermissionLevel.ADMIN),
-                Map.of("AWS Console", PermissionLevel.ADMIN),
-                List.of()
-        );
-
-        // Seed remaining synthetic employees (EMP-1005 to EMP-1040)
-        String[] departments = {"Engineering", "HR", "Finance", "Product", "Operations"};
-        String[] roles = {"Developer", "HR Manager", "Finance Analyst", "Product Manager", "System Administrator"};
-
-        for (int i = 5; i <= 40; i++) {
-            String empId = "EMP-" + (1000 + i);
-            String userId = "usr_user" + i;
-            String name = "User " + i + " " + (i % 2 == 0 ? "Smith" : "Johnson");
-            String email = "user" + i + "@saas.com";
-            String dept = departments[i % departments.length];
-            String role = roles[i % roles.length];
-            EmploymentStatus status = (i % 8 == 0) ? EmploymentStatus.LEFT : ((i % 12 == 0) ? EmploymentStatus.ON_LEAVE : EmploymentStatus.ACTIVE);
-
-            Map<String, PermissionLevel> appMap = new HashMap<>();
-            if (role.equals("Developer")) {
-                appMap.put("GitHub", (i % 5 == 0) ? PermissionLevel.ADMIN : PermissionLevel.WRITE);
-                appMap.put("Jira", PermissionLevel.USER);
-            } else if (role.equals("HR Manager")) {
-                appMap.put("HR System", PermissionLevel.ADMIN);
-                appMap.put("Jira", PermissionLevel.USER);
-            } else if (role.equals("Finance Analyst")) {
-                appMap.put("Finance System", PermissionLevel.READ);
-                appMap.put("Jira", PermissionLevel.USER);
-            } else if (role.equals("Product Manager")) {
-                appMap.put("Jira", PermissionLevel.ADMIN);
-                appMap.put("GitHub", PermissionLevel.READ);
-            } else {
-                appMap.put("AWS Console", PermissionLevel.ADMIN);
-                appMap.put("GitHub", PermissionLevel.ADMIN);
-            }
-
-            // Seed valid approval for compliant active users
-            List<ApprovalRecord> appList = new ArrayList<>();
-            if (status == EmploymentStatus.ACTIVE && i % 5 != 0) {
-                for (String appName : appMap.keySet()) {
-                    appList.add(new ApprovalRecord("APP-" + i + "-" + appName.hashCode(), userId, appName, appMap.get(appName), userId, "manager_admin", now.minusMonths(3), ApprovalStatus.APPROVED, "Standard role entitlement"));
-                }
-            }
-
-            createEmployeeWithAccess(empId, userId, name, email, dept, role, null, status, now.minusMonths(i), null, appMap, Map.of(), appList);
-        }
-    }
-
-    private void createEmployeeWithAccess(String empId, String userId, String name, String email, 
-                                           String dept, String currentRole, String prevRole, 
-                                           EmploymentStatus status, LocalDateTime joinDate, LocalDateTime roleChangeDate,
-                                           Map<String, PermissionLevel> appEntitlements,
-                                           Map<String, PermissionLevel> dirGroups,
-                                           List<ApprovalRecord> approvals) {
-        LocalDateTime now = LocalDateTime.now();
-        Employee emp = new Employee(empId, userId, name, email, dept, currentRole, prevRole, status, joinDate, roleChangeDate, now);
+        Employee emp = new Employee(empId, username, fullName, email, department, currentRole, previousRole, status, hiredAt, roleChangeAt);
         employeeRepository.save(emp);
 
-        for (Map.Entry<String, PermissionLevel> entry : appEntitlements.entrySet()) {
-            Entitlement ent = new Entitlement(userId, entry.getKey(), entry.getValue(), joinDate, "ACTIVE", now);
-            entitlementRepository.save(ent);
+        for (Map.Entry<String, PermissionLevel> entry : entitlements.entrySet()) {
+            entitlementRepository.save(new Entitlement(username, entry.getKey(), entry.getValue()));
         }
 
-        for (Map.Entry<String, PermissionLevel> entry : dirGroups.entrySet()) {
-            DirectoryGroup group = new DirectoryGroup(userId, entry.getKey() + "_Group", entry.getKey(), entry.getValue(), now);
-            directoryGroupRepository.save(group);
+        for (String groupName : directoryGroups) {
+            directoryGroupRepository.save(new DirectoryGroup(groupName, username));
         }
 
-        if (approvals != null) {
-            approvalRecordRepository.saveAll(approvals);
+        for (ApprovalRecord app : approvals) {
+            approvalRepository.save(app);
         }
     }
 }

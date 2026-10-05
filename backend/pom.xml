@@ -13,7 +13,7 @@
     <artifactId>reconciliation-engine</artifactId>
     <version>1.0.0</version>
     <name>JML Access Reconciliation Engine</name>
-    <description>Joiner-Mover-Leaver Access Reconciliation Engine with Approvals, Audit, and Rollback</description>
+    <description>Joiner-Mover-Leaver Access Reconciliation Engine with Accountable Approvals, Audit Trail, and Rollback</description>
     <properties>
         <java.version>17</java.version>
     </properties>

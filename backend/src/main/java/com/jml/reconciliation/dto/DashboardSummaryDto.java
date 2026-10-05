@@ -1,54 +1,52 @@
 package com.jml.reconciliation.dto;
 
-import com.jml.reconciliation.entity.DataSourceHealth;
-import java.util.List;
+import java.util.Map;
 
 public class DashboardSummaryDto {
 
-    private long totalUsers;
-    private long activeIssues;
-    private long criticalIssues;
-    private long orphanedAccessCount;
-    private long excessiveAccessCount;
-    private long unapprovedAccessCount;
-    private long missingAccessCount;
+    private long totalEmployees;
+    private long activeEmployees;
+    private long leaversCount;
+    private long highRiskIssuesCount;
     private long pendingApprovalsCount;
-    private double targetCompliancePercentage;
-    private double avgRemediationTimeMinutes;
-    private List<DataSourceHealth> dataSources;
+    private long executedRemediationsCount;
+    private double averageDataConfidence;
+    private Map<String, String> dataSourceHealthMap;
 
     public DashboardSummaryDto() {}
 
-    public long getTotalUsers() { return totalUsers; }
-    public void setTotalUsers(long totalUsers) { this.totalUsers = totalUsers; }
+    public DashboardSummaryDto(long totalEmployees, long activeEmployees, long leaversCount, long highRiskIssuesCount, long pendingApprovalsCount, long executedRemediationsCount, double averageDataConfidence, Map<String, String> dataSourceHealthMap) {
+        this.totalEmployees = totalEmployees;
+        this.activeEmployees = activeEmployees;
+        this.leaversCount = leaversCount;
+        this.highRiskIssuesCount = highRiskIssuesCount;
+        this.pendingApprovalsCount = pendingApprovalsCount;
+        this.executedRemediationsCount = executedRemediationsCount;
+        this.averageDataConfidence = averageDataConfidence;
+        this.dataSourceHealthMap = dataSourceHealthMap;
+    }
 
-    public long getActiveIssues() { return activeIssues; }
-    public void setActiveIssues(long activeIssues) { this.activeIssues = activeIssues; }
+    public long getTotalEmployees() { return totalEmployees; }
+    public void setTotalEmployees(long totalEmployees) { this.totalEmployees = totalEmployees; }
 
-    public long getCriticalIssues() { return criticalIssues; }
-    public void setCriticalIssues(long criticalIssues) { this.criticalIssues = criticalIssues; }
+    public long getActiveEmployees() { return activeEmployees; }
+    public void setActiveEmployees(long activeEmployees) { this.activeEmployees = activeEmployees; }
 
-    public long getOrphanedAccessCount() { return orphanedAccessCount; }
-    public void setOrphanedAccessCount(long orphanedAccessCount) { this.orphanedAccessCount = orphanedAccessCount; }
+    public long getLeaversCount() { return leaversCount; }
+    public void setLeaversCount(long leaversCount) { this.leaversCount = leaversCount; }
 
-    public long getExcessiveAccessCount() { return excessiveAccessCount; }
-    public void setExcessiveAccessCount(long excessiveAccessCount) { this.excessiveAccessCount = excessiveAccessCount; }
-
-    public long getUnapprovedAccessCount() { return unapprovedAccessCount; }
-    public void setUnapprovedAccessCount(long unapprovedAccessCount) { this.unapprovedAccessCount = unapprovedAccessCount; }
-
-    public long getMissingAccessCount() { return missingAccessCount; }
-    public void setMissingAccessCount(long missingAccessCount) { this.missingAccessCount = missingAccessCount; }
+    public long getHighRiskIssuesCount() { return highRiskIssuesCount; }
+    public void setHighRiskIssuesCount(long highRiskIssuesCount) { this.highRiskIssuesCount = highRiskIssuesCount; }
 
     public long getPendingApprovalsCount() { return pendingApprovalsCount; }
     public void setPendingApprovalsCount(long pendingApprovalsCount) { this.pendingApprovalsCount = pendingApprovalsCount; }
 
-    public double getTargetCompliancePercentage() { return targetCompliancePercentage; }
-    public void setTargetCompliancePercentage(double targetCompliancePercentage) { this.targetCompliancePercentage = targetCompliancePercentage; }
+    public long getExecutedRemediationsCount() { return executedRemediationsCount; }
+    public void setExecutedRemediationsCount(long executedRemediationsCount) { this.executedRemediationsCount = executedRemediationsCount; }
 
-    public double getAvgRemediationTimeMinutes() { return avgRemediationTimeMinutes; }
-    public void setAvgRemediationTimeMinutes(double avgRemediationTimeMinutes) { this.avgRemediationTimeMinutes = avgRemediationTimeMinutes; }
+    public double getAverageDataConfidence() { return averageDataConfidence; }
+    public void setAverageDataConfidence(double averageDataConfidence) { this.averageDataConfidence = averageDataConfidence; }
 
-    public List<DataSourceHealth> getDataSources() { return dataSources; }
-    public void setDataSources(List<DataSourceHealth> dataSources) { this.dataSources = dataSources; }
+    public Map<String, String> getDataSourceHealthMap() { return dataSourceHealthMap; }
+    public void setDataSourceHealthMap(Map<String, String> dataSourceHealthMap) { this.dataSourceHealthMap = dataSourceHealthMap; }
 }

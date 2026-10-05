@@ -1,23 +1,17 @@
 package com.jml.reconciliation.dto;
 
-import jakarta.validation.constraints.NotBlank;
-
 public class ApprovalDecisionRequest {
 
-    @NotBlank(message = "Reviewer ID is required")
     private String reviewerId;
-
-    @NotBlank(message = "Decision must be APPROVE or REJECT")
-    private String decision;
-
-    private String comment;
+    private String decision; // APPROVED or REJECTED
+    private String comments;
 
     public ApprovalDecisionRequest() {}
 
-    public ApprovalDecisionRequest(String reviewerId, String decision, String comment) {
+    public ApprovalDecisionRequest(String reviewerId, String decision, String comments) {
         this.reviewerId = reviewerId;
         this.decision = decision;
-        this.comment = comment;
+        this.comments = comments;
     }
 
     public String getReviewerId() { return reviewerId; }
@@ -26,6 +20,6 @@ public class ApprovalDecisionRequest {
     public String getDecision() { return decision; }
     public void setDecision(String decision) { this.decision = decision; }
 
-    public String getComment() { return comment; }
-    public void setComment(String comment) { this.comment = comment; }
+    public String getComments() { return comments; }
+    public void setComments(String comments) { this.comments = comments; }
 }

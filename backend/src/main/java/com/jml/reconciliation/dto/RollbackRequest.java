@@ -1,13 +1,8 @@
 package com.jml.reconciliation.dto;
 
-import jakarta.validation.constraints.NotBlank;
-
 public class RollbackRequest {
 
-    @NotBlank(message = "Actor is required")
     private String actor;
-
-    @NotBlank(message = "Rollback reason is required")
     private String reason;
 
     public RollbackRequest() {}
