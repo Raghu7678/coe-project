@@ -1,86 +1,60 @@
 package com.jml.reconciliation.dto;
 
-import java.util.List;
-
 public class EvaluationMetricsDto {
 
-    private int groundTruthIssuesCount;
-
-    // Baseline metrics
-    private int baselineDetectedCount;
-    private int baselineTruePositives;
-    private int baselineFalsePositives;
-    private int baselineFalseNegatives;
-    private double baselinePrecision;
-    private double baselineRecall;
-    private double baselineDetectionRate;
-    private double baselineTargetComplianceRate;
-
-    // Prototype metrics
-    private int prototypeDetectedCount;
-    private int prototypeTruePositives;
-    private int prototypeFalsePositives;
-    private int prototypeFalseNegatives;
-    private double prototypePrecision;
-    private double prototypeRecall;
-    private double prototypeDetectionRate;
-    private double prototypeTargetComplianceRate;
-
-    private List<String> errorAnalysisNotes;
+    private String engineName;
+    private int groundTruthCount;
+    private int detectedIssuesCount;
+    private int truePositives;
+    private int falsePositives;
+    private int falseNegatives;
+    private double precision;
+    private double recall;
+    private double detectionRate;
+    private double targetSlaComplianceRate;
 
     public EvaluationMetricsDto() {}
 
-    public int getGroundTruthIssuesCount() { return groundTruthIssuesCount; }
-    public void setGroundTruthIssuesCount(int groundTruthIssuesCount) { this.groundTruthIssuesCount = groundTruthIssuesCount; }
+    public EvaluationMetricsDto(String engineName, int groundTruthCount, int detectedIssuesCount, int truePositives, int falsePositives, int falseNegatives, double precision, double recall, double detectionRate, double targetSlaComplianceRate) {
+        this.engineName = engineName;
+        this.groundTruthCount = groundTruthCount;
+        this.detectedIssuesCount = detectedIssuesCount;
+        this.truePositives = truePositives;
+        this.falsePositives = falsePositives;
+        this.falseNegatives = falseNegatives;
+        this.precision = precision;
+        this.recall = recall;
+        this.detectionRate = detectionRate;
+        this.targetSlaComplianceRate = targetSlaComplianceRate;
+    }
 
-    public int getBaselineDetectedCount() { return baselineDetectedCount; }
-    public void setBaselineDetectedCount(int baselineDetectedCount) { this.baselineDetectedCount = baselineDetectedCount; }
+    public String getEngineName() { return engineName; }
+    public void setEngineName(String engineName) { this.engineName = engineName; }
 
-    public int getBaselineTruePositives() { return baselineTruePositives; }
-    public void setBaselineTruePositives(int baselineTruePositives) { this.baselineTruePositives = baselineTruePositives; }
+    public int getGroundTruthCount() { return groundTruthCount; }
+    public void setGroundTruthCount(int groundTruthCount) { this.groundTruthCount = groundTruthCount; }
 
-    public int getBaselineFalsePositives() { return baselineFalsePositives; }
-    public void setBaselineFalsePositives(int baselineFalsePositives) { this.baselineFalsePositives = baselineFalsePositives; }
+    public int getDetectedIssuesCount() { return detectedIssuesCount; }
+    public void setDetectedIssuesCount(int detectedIssuesCount) { this.detectedIssuesCount = detectedIssuesCount; }
 
-    public int getBaselineFalseNegatives() { return baselineFalseNegatives; }
-    public void setBaselineFalseNegatives(int baselineFalseNegatives) { this.baselineFalseNegatives = baselineFalseNegatives; }
+    public int getTruePositives() { return truePositives; }
+    public void setTruePositives(int truePositives) { this.truePositives = truePositives; }
 
-    public double getBaselinePrecision() { return baselinePrecision; }
-    public void setBaselinePrecision(double baselinePrecision) { this.baselinePrecision = baselinePrecision; }
+    public int getFalsePositives() { return falsePositives; }
+    public void setFalsePositives(int falsePositives) { this.falsePositives = falsePositives; }
 
-    public double getBaselineRecall() { return baselineRecall; }
-    public void setBaselineRecall(double baselineRecall) { this.baselineRecall = baselineRecall; }
+    public int getFalseNegatives() { return falseNegatives; }
+    public void setFalseNegatives(int falseNegatives) { this.falseNegatives = falseNegatives; }
 
-    public double getBaselineDetectionRate() { return baselineDetectionRate; }
-    public void setBaselineDetectionRate(double baselineDetectionRate) { this.baselineDetectionRate = baselineDetectionRate; }
+    public double getPrecision() { return precision; }
+    public void setPrecision(double precision) { this.precision = precision; }
 
-    public double getBaselineTargetComplianceRate() { return baselineTargetComplianceRate; }
-    public void setBaselineTargetComplianceRate(double baselineTargetComplianceRate) { this.baselineTargetComplianceRate = baselineTargetComplianceRate; }
+    public double getRecall() { return recall; }
+    public void setRecall(double recall) { this.recall = recall; }
 
-    public int getPrototypeDetectedCount() { return prototypeDetectedCount; }
-    public void setPrototypeDetectedCount(int prototypeDetectedCount) { this.prototypeDetectedCount = prototypeDetectedCount; }
+    public double getDetectionRate() { return detectionRate; }
+    public void setDetectionRate(double detectionRate) { this.detectionRate = detectionRate; }
 
-    public int getPrototypeTruePositives() { return prototypeTruePositives; }
-    public void setPrototypeTruePositives(int prototypeTruePositives) { this.prototypeTruePositives = prototypeTruePositives; }
-
-    public int getPrototypeFalsePositives() { return prototypeFalsePositives; }
-    public void setPrototypeFalsePositives(int prototypeFalsePositives) { this.prototypeFalsePositives = prototypeFalsePositives; }
-
-    public int getPrototypeFalseNegatives() { return prototypeFalseNegatives; }
-    public void setPrototypeFalseNegatives(int prototypeFalseNegatives) { this.prototypeFalseNegatives = prototypeFalseNegatives; }
-
-    public double getPrototypePrecision() { return prototypePrecision; }
-    public void setPrototypePrecision(double prototypePrecision) { this.prototypePrecision = prototypePrecision; }
-
-    public double getPrototypeRecall() { return prototypeRecall; }
-    public void setPrototypeRecall(double prototypeRecall) { this.prototypeRecall = prototypeRecall; }
-
-    public double getPrototypeDetectionRate() { return prototypeDetectionRate; }
-    public void setPrototypeDetectionRate(double prototypeDetectionRate) { this.prototypeDetectionRate = prototypeDetectionRate; }
-
-    public double getPrototypeTargetComplianceRate() { return prototypeTargetComplianceRate; }
-    public void setPrototypeTargetComplianceRate(double prototypeTargetComplianceRate) { this.prototypeTargetComplianceRate = prototypeTargetComplianceRate; }
-
-    public List<String> getErrorAnalysisNotes() { return errorAnalysisNotes; }
-    public void setErrorAnalysisNotes(List<String> errorAnalysisNotes) { this.errorAnalysisNotes = errorAnalysisNotes; }
+    public double getTargetSlaComplianceRate() { return targetSlaComplianceRate; }
+    public void setTargetSlaComplianceRate(double targetSlaComplianceRate) { this.targetSlaComplianceRate = targetSlaComplianceRate; }
 }
