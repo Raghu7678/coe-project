@@ -1,61 +1,80 @@
-# Three-Minute Demo Script
+# Demonstration & Scoring Script
 
-## Project Title
-**JML Access Reconciliation Engine with Accountable Approvals, Audit Trail, and Rollback**
-
----
-
-## Demo Overview & Presentation Guide (3:00 Minutes)
-
-### 0:00–0:30 | Problem Statement & Context
-* **Presenter Action**: Open the Dashboard (`http://localhost:5173`).
-* **Script**: 
-  > "Welcome. In modern SaaS companies, Joiner-Mover-Leaver (JML) access management is a major security challenge. When employees leave or transition between roles, legacy removal requests are frequently delayed. This creates dangerous orphaned access, excessive privileges, and unapproved access across SaaS platforms like GitHub, AWS, and HR systems.
-  > Today, we present the **JML Access Reconciliation Engine**—a multi-source, resilient reconciliation solution that automatically detects access anomalies, calculates confidence scores based on data source health, enforces accountable human approval for high-risk removals, and supports full audit rollback."
+This script provides a step-by-step walkthrough for evaluating the **Contractor Risk Pre-Qualification Tool**.
 
 ---
 
-### 0:30–1:00 | Data Sources & Multi-Source Health Monitoring
-* **Presenter Action**: Navigate to **Data Source Health** tab.
-* **Script**:
-  > "Notice our active data sources: HR System, Directory Groups, Application Entitlements, and Approval History. 
-  > Unlike legacy tools that crash or issue false alarms when a data feed fails, our engine actively evaluates data freshness and health. When a source is delayed or stale, the engine dynamically adjusts its confidence score and engages auto-remediation safety gates to prevent unsafe automatic removals."
+## 1. Startup & System Verification
+1. **Start Backend**:
+   ```bash
+   cd backend
+   mvn spring-boot:run
+   ```
+   *Verify API status at `http://localhost:8080/` (Returns `UP` status).*
+
+2. **Start Frontend**:
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+   *Open browser at `http://localhost:5173`.*
 
 ---
 
-### 1:00–1:40 | Demonstrating a Mover Role Transition & Reconciliation
-* **Presenter Action**: Navigate to **Reconciliation** tab. Show `Alex Mercer` (usr_alex).
-* **Script**:
-  > "Let's observe a real Mover event: Employee Alex Mercer recently transitioned from **Developer** to **HR Manager**. 
-  > In a traditional setup, his old GitHub ADMIN access might linger indefinitely. Let's run our prototype reconciliation engine...
-  > Instantly, the engine flags Alex's leftover GitHub ADMIN access as an **EXCESSIVE_ACCESS** / **ROLE_CHANGE_ACCESS_CONFLICT** issue with a **HIGH** risk level. Notice that because GitHub ADMIN is a privileged permission, the engine sets the remediation status to `PENDING_REVIEW` rather than auto-deleting it."
+## 2. Step-by-Step Evaluation Walkthrough
+
+### Step 1: Executive Dashboard Overview
+* Navigate to **Executive Dashboard**.
+* Observe key metrics:
+  * Total Contractors: **40**
+  * High/Critical Risk Flags
+  * Data Feed Confidence Score: **100%**
+  * Feeds Health Matrix: `FINANCIAL_CREDIT_FEED`, `SAFETY_OSHA_FEED`, `INSURANCE_COMPLIANCE_FEED`, `SANCTIONS_WATCHLIST_FEED` (`AVAILABLE`).
 
 ---
 
-### 1:40–2:10 | Accountable Approval Workflow & Execution
-* **Presenter Action**: Navigate to **Approval Queue**. Show pending item for `Alex Mercer`. Select reviewer `sec_reviewer`, enter comment, click **Approve & Execute**.
-* **Script**:
-  > "Now, we step into the **Accountable Approval Queue**. Here, security reviewers inspect the evidence: previous state `Permission: ADMIN` versus expected state `Permission: WRITE`. 
-  > To guarantee accountability, our system enforces self-approval prevention. As security reviewer `sec_reviewer`, I approve the action with rationale. 
-  > Upon approval, the engine immediately updates Alex's entitlement state in the target system, reducing his permission to WRITE and recording an immutable audit event."
+### Step 2: Contractor Risk Evaluation Hub
+* Navigate to **Risk Evaluation Hub**.
+* Click **Run Assessment** (Prototype Engine).
+* Observe **12 detected risk anomalies**:
+  1. `BuildTech Heavy Dynamics` — **HIGH_EMR_SAFETY_VIOLATION** (EMR=1.45, 1 Fatality).
+  2. `Sentinel Security Corp` — **SANCTION_WATCHLIST_MATCH** (Matched PEP/OFAC List).
+  3. `Titan Civil Construction` — **EXPIRED_INSURANCE_DEFICIT** (Expired COI).
+  4. `Omni Freight Freightlines` — **FINANCIAL_INSOLVENCY_RISK** (Credit score 38).
+* Click **Inspect** on `BuildTech Heavy Dynamics` to view the multi-source evidence details.
 
 ---
 
-### 2:10–2:35 | Simulating Data Source Failure & Engine Resilience
-* **Presenter Action**: Navigate to **Data Source Health**. Set **DIRECTORY** source to `UNAVAILABLE`. Re-run reconciliation.
-* **Script**:
-  > "Now let's simulate a real-world outage: What happens if the Directory Group service goes completely offline?
-  > We toggle Directory to `UNAVAILABLE` and re-run reconciliation. 
-  > The engine does NOT crash. Instead, it continues operating using available HR, Entitlement, and Approval sources, while dropping the confidence score for affected users to 70%. Because confidence is below our 75% safety threshold, destructive removals are automatically redirected to human review."
+### Step 3: Accountable Approval Queue (Dual-Control Enforcement)
+* Navigate to **Approval Queue**.
+* Select a pending review item (e.g. `BuildTech Heavy Dynamics`).
+* Attempt self-approval:
+  * Set Reviewer ID to `RISK_ENGINE` (same as initiator).
+  * Click **APPROVE QUALIFICATION ACTION**.
+  * Observe error banner: *"Self-approval is strictly forbidden under dual-control accountable approval policy."*
+* Change Reviewer ID to `RISK_OFFICER_01` and submit approval.
+* Observe success notification.
 
 ---
 
-### 2:35–3:00 | Audit Trail, Rollback & Empirical Baseline Comparison
-* **Presenter Action**: 
-  1. Navigate to **Remediation & Rollback** page. Click **Rollback** on Alex Mercer's executed action. Provide reason: *"Temporary emergency project access authorized by VP"*.
-  2. Navigate to **Audit Trail** page to show append-only `ROLLBACK_EXECUTED` event.
-  3. Navigate to **Baseline vs Prototype** evaluation page.
-* **Script**:
-  > "Finally, if a removal was made by mistake, our authorized administrator can trigger an instant **Rollback**. The previous permission state is restored, and a new `ROLLBACK_EXECUTED` event is appended to our immutable audit log—never deleting history.
-  > Comparing our improved prototype against a naive baseline on the exact same synthetic dataset, the baseline achieved only 50% recall and missed unapproved access. Our resilient prototype achieves **100% precision and recall** with SLA compliance rates exceeding 95%.
-  > Thank you!"
+### Step 4: Qualification Remediation & Instant Rollback
+* Navigate to **Remediation & Rollback**.
+* Click **Execute** on the approved action. Notice status transition to `EXECUTED`.
+* Click **Rollback** on the executed action, enter auditor rationale, and click **Confirm Rollback**.
+* Notice vendor status is instantly restored to previous qualification state.
+
+---
+
+### Step 5: Data Feeds Health Simulation
+* Navigate to **Data Feeds Health**.
+* Under `SAFETY_OSHA_FEED`, click **UNAVAILABLE**.
+* Notice dynamic Data Confidence Score drops from **100%** to **60%**, triggering safety gates across all vendor assessments.
+
+---
+
+### Step 6: Empirical Evaluation Metrics (Baseline vs Prototype)
+* Navigate to **Baseline vs Prototype**.
+* Click **Re-Run Experiment**.
+* Review comparative metrics table:
+  * **Naive Baseline Engine**: 75% Precision, 50% Recall (missed safety & sanctions).
+  * **Improved Prototype Engine**: **100% Precision**, **100% Recall**, **95% Target SLA Compliance**.

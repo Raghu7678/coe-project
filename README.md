@@ -1,42 +1,43 @@
-# JML Access Reconciliation Engine with Accountable Approvals, Audit Trail, and Rollback
+# Contractor Risk Pre-Qualification Tool with Accountable Approvals, Audit Trail, and Rollback
 
-A enterprise-grade SaaS Joiner-Mover-Leaver (JML) Access Reconciliation Engine designed to detect orphaned access for leavers, excessive privileges for role movers, missing required access, and unapproved privileged access across SaaS applications.
+An enterprise-grade **Contractor Risk Pre-Qualification Tool** designed to ingest multi-source vendor risk feeds (OSHA Safety records, Certificate of Insurance compliance, financial credit profiles, and OFAC/PEP sanction watchlists), evaluate dynamic data confidence scores, enforce safety gates and dual-control accountable approvals, execute qualification remediations, support instant state rollback, and empirically compare prototype performance against a naive single-source baseline.
 
 ---
 
 ## 1. Project Title
-**JML Access Reconciliation Engine with Accountable Approvals, Audit Trail, and Rollback**
+**Contractor Risk Pre-Qualification Tool with Accountable Approvals, Audit Trail, and Rollback**
 
 ---
 
 ## 2. Problem Statement
-SaaS organizations allow customer administrators to define custom roles. However, when users change roles (Movers) or leave the company (Leavers), removing old access is often delayed or neglected. This leads to:
-* **Orphaned Access**: Former employees retaining active login credentials or directory access.
-* **Excessive Access**: Users retaining elevated permissions (e.g. ADMIN) after moving to non-privileged roles.
-* **Unauthorized / Unapproved Access**: Users accumulating access without documented approval history.
-* **Security & Compliance Failures**: Violation of least privilege principles and regulatory frameworks (SOC2, ISO 27001).
+Organizations frequently engage third-party contractors and vendors across construction, IT services, logistics, security, and facility management. Manual or single-source pre-qualification leads to:
+* **High EMR & Safety Hazards**: Unqualified contractors with active OSHA violations or high Experience Modification Rates (EMR > 1.25) causing workplace incidents.
+* **Insurance Deficits**: Contractors operating with expired Certificates of Insurance (COI) or insufficient liability coverage.
+* **Financial Insolvency Risk**: Awarding high-value contracts to vendors with high debt ratios or impending bankruptcy.
+* **Sanction Watchlist Violations**: Accidental engagement of vendors listed on international PEP / OFAC sanction watchlists.
+* **Lack of Accountable Governance**: Self-approval of high-risk waivers and lack of rollback capabilities when qualification status must be restored.
 
 ---
 
 ## 3. Primary Objective
 Build a complete, end-to-end working system that:
-* Validates actual access against HR data, Directory Groups, Application Entitlements, and Approval Histories.
-* Operates resiliently when one data source is missing, delayed, or stale.
-* Calculates dynamic data confidence scores and enforces accountable human review for high-impact actions.
-* Supports Joiner, Mover, and Leaver workflows.
-* Maintains an immutable audit trail and supports instant rollback for executed remediations.
+* Validates actual contractor risk against Safety Records (EMR/TRIR), Insurance Compliance (COI), Financial Profiles, and Sanction Watchlists.
+* Operates resiliently when data sources are missing, delayed, or stale by computing dynamic data confidence scores.
+* Automatically enforces safety gates and dual-control accountable approvals for high-risk or low-confidence evaluations.
+* Executes qualification actions (e.g. `DISQUALIFY_CONTRACTOR`, `REQUIRE_CONDITIONAL_BOND`, `SUSPEND_ONBOARDING`) and supports instant status rollback.
+* Maintains an immutable audit trail for all system events.
 * Empirically evaluates prototype performance against a naive single-source baseline.
 
 ---
 
 ## 4. Key Features
-* **Multi-Source Ingestion & Health Evaluation**: Ingests HR status, Directory Groups, Application Entitlements, and Approval Records. Monitors health (`AVAILABLE`, `STALE`, `DELAYED`, `UNAVAILABLE`).
-* **Confidence & Safety Gates**: Dynamic confidence scoring formula. Automatically forces high-risk or low-confidence removals to `PENDING_REVIEW`.
-* **Accountable Approvals**: Requires distinct security reviewers for high-impact actions, preventing self-approval.
-* **Remediation & Rollback Engine**: Executes permission updates in application data stores and restores previous states upon rollback without deleting historical audit logs.
+* **Multi-Source Ingestion & Health Evaluation**: Ingests Safety, Insurance, Financial, and Watchlist records. Monitors feed health (`AVAILABLE`, `STALE`, `DELAYED`, `UNAVAILABLE`).
+* **Confidence & Safety Gates**: Dynamic confidence formula $C = 1.0 - (0.15 \times \text{Stale}) - (0.25 \times \text{Delayed}) - (0.40 \times \text{Unavailable})$. Forces high-risk or low-confidence evaluations to `PENDING_REVIEW`.
+* **Accountable Approvals**: Enforces dual-control by requiring distinct risk officers for high-impact actions, strictly preventing self-approval.
+* **Remediation & Rollback Engine**: Executes qualification updates in data stores and restores previous states upon rollback without deleting historical audit logs.
 * **Immutable Audit Trail**: Append-only audit logging for all system events.
 * **Baseline vs. Prototype Comparison**: Built-in benchmark experiment evaluating Precision, Recall, and SLA target compliance.
-* **Modern Cyber Dashboard**: Dark-mode glassmorphic React interface with real-time health toggles.
+* **Modern Cyber Dashboard**: Dark-mode glassmorphic React interface with real-time feed toggles and evaluation metrics.
 
 ---
 
@@ -52,13 +53,13 @@ Build a complete, end-to-end working system that:
                                   ├─────────────────────────────────────────┤
                                   │  Controllers  │  Services  │  DTO Layer │
                                   ├─────────────────────────────────────────┤
-                                  │      CORE RECONCILIATION ENGINE         │
+                                  │    CONTRACTOR RISK PRE-QUAL ENGINE      │
                                   │  ├─ Policy Service                      │
-                                  │  ├─ Multi-Source Collector              │
+                                  │  ├─ Multi-Source Ingestion Collector    │
                                   │  ├─ Health & Confidence Evaluator       │
-                                  │  ├─ Risk Scoring & Issue Detector       │
-                                  │  ├─ Approval & Remediation Engine       │
-                                  │  ├─ Rollback & State Restoration        │
+                                  │  ├─ Risk Scoring & Anomaly Classifier   │
+                                  │  ├─ Dual-Control Approval Engine        │
+                                  │  ├─ Qualification & Rollback Engine     │
                                   │  └─ Immutable Audit Logger              │
                                   └────────────────────┬────────────────────┘
                                                        │ JPA / Hibernate
@@ -86,21 +87,21 @@ coe project/
 │   ├── Dockerfile
 │   └── src/
 │       ├── main/
-│       │   ├── java/com/jml/reconciliation/
-│       │   │   ├── JmlReconciliationApplication.java
+│       │   ├── java/com/contractor/risk/
+│       │   │   ├── ContractorRiskApplication.java
 │       │   │   ├── config/ (CorsConfig, DataInitializer)
-│       │   │   ├── controller/ (Employee, Reconciliation, Approval, Remediation, Audit, Health, Policy, Evaluation)
-│       │   │   ├── dto/ (ApprovalDecision, RollbackRequest, EvaluationMetrics, DashboardSummary)
-│       │   │   ├── entity/ (Employee, RolePolicy, DirectoryGroup, Entitlement, ApprovalRecord, ReconciliationIssue, RemediationAction, AuditEvent, DataSourceHealth)
-│       │   │   ├── model/enums/ (EmploymentStatus, PermissionLevel, IssueType, RiskLevel, HealthState, RemediationStatus)
+│       │   │   ├── controller/ (Contractor, RiskAssessment, Approval, Remediation, Audit, DataSourceHealth, Policy, Evaluation, Root)
+│       │   │   ├── dto/ (ApprovalDecisionRequest, DashboardSummaryDto, EvaluationMetricsDto, RollbackRequest, HealthOverrideRequest)
+│       │   │   ├── entity/ (Contractor, SafetyRecord, InsuranceComplianceRecord, FinancialProfile, ContractorRiskAnomaly, QualificationAction, ApprovalRecord, DataSourceHealth, AuditEvent, RiskThresholdPolicy)
+│       │   │   ├── model/enums/ (ContractorCategory, RiskTier, QualificationStatus, AnomalyType, RiskLevel, HealthState, RemediationStatus)
 │       │   │   ├── repository/ (*Repository interfaces)
-│       │   │   └── service/ (ReconciliationEngineService, BaselineEngineService, ApprovalService, RemediationService, AuditService, DataSourceHealthService, EvaluationService, PolicyService)
+│       │   │   └── service/ (ContractorRiskEngineService, BaselineRiskEngineService, ApprovalService, RemediationService, AuditService, DataSourceHealthService, EvaluationService, PolicyService)
 │       │   └── resources/
 │       │       ├── application.yml
 │       │       ├── application-mysql.yml
 │       │       └── schema-mysql.sql
-│       └── test/java/com/jml/reconciliation/
-│           └── ReconciliationEngineTests.java
+│       └── test/java/com/contractor/risk/
+│           └── ContractorRiskEngineTests.java
 ├── frontend/
 │   ├── package.json
 │   ├── vite.config.ts
@@ -112,7 +113,7 @@ coe project/
 │       ├── types/ (TypeScript interfaces)
 │       ├── services/ (API client layer)
 │       ├── components/ (Navbar, Sidebar, DataSourceHealthBanner)
-│       └── pages/ (Dashboard, ReconciliationPage, IssueDetailPage, ApprovalQueuePage, RemediationRollbackPage, AuditTrailPage, DataSourceHealthPage, PolicyManagementPage, EvaluationMetricsPage)
+│       └── pages/ (Dashboard, RiskAssessmentPage, AnomalyDetailPage, ApprovalQueuePage, QualificationRemediationPage, AuditTrailPage, DataSourceHealthPage, PolicyManagementPage, EvaluationMetricsPage)
 ├── docker-compose.yml
 ├── README.md
 └── DEMO_SCRIPT.md
@@ -137,7 +138,7 @@ mvn clean package -DskipTests
 mvn spring-boot:run
 ```
 The backend starts on `http://localhost:8080`.
-H2 Console is available at `http://localhost:8080/h2-console` (JDBC URL: `jdbc:h2:mem:jmldb`).
+H2 Console is available at `http://localhost:8080/h2-console` (JDBC URL: `jdbc:h2:mem:contractordb`).
 
 ---
 
@@ -160,7 +161,7 @@ The frontend application opens on `http://localhost:5173`.
 ---
 
 ## 12. How to Run Tests
-Execute the full automated test suite covering all security edge cases and failure scenarios:
+Execute the full automated test suite covering safety gates, dual-control approval enforcement, and status rollback:
 ```bash
 cd backend
 mvn test
@@ -173,53 +174,54 @@ mvn test
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `GET` | `/api/dashboard/summary` | Retrieves aggregate metrics, risk counts, and source health |
-| `POST` | `/api/reconciliation/run?engine={PROTOTYPE\|BASELINE}` | Triggers reconciliation run |
-| `GET` | `/api/reconciliation/issues?engine={PROTOTYPE\|BASELINE}` | Fetches detected issues |
-| `GET` | `/api/approvals/pending` | Retrieves remediation actions awaiting review |
-| `POST` | `/api/approvals/{id}/decision` | Processes APPROVE or REJECT decision |
-| `GET` | `/api/remediations` | Lists all executed or pending remediation actions |
-| `POST` | `/api/remediations/{id}/execute` | Executes an approved remediation action |
-| `POST` | `/api/remediations/{id}/rollback` | Performs rollback restoring previous permission state |
+| `GET` | `/api/contractors` | Lists all 40 pre-seeded vendors |
+| `POST` | `/api/reconciliation/run?engine={PROTOTYPE\|BASELINE}` | Triggers risk pre-qualification evaluation run |
+| `GET` | `/api/reconciliation/issues?engine={PROTOTYPE\|BASELINE}` | Fetches detected risk anomalies |
+| `GET` | `/api/approvals/pending` | Retrieves qualification actions awaiting dual-control review |
+| `POST` | `/api/approvals/{id}/decision` | Processes APPROVE or REJECT decision (Enforces non-self approval) |
+| `GET` | `/api/remediations` | Lists all qualification actions |
+| `POST` | `/api/remediations/{id}/execute` | Executes an approved qualification action |
+| `POST` | `/api/remediations/{id}/rollback` | Performs instant rollback restoring previous qualification state |
 | `GET` | `/api/audit` | Retrieves immutable audit trail logs |
-| `PUT` | `/api/data-sources/health/{sourceName}` | Simulates data source health override |
+| `PUT` | `/api/data-sources/health/{sourceName}` | Simulates data feed health override |
 | `GET` | `/api/evaluation/run` | Executes baseline vs prototype comparative experiment |
 
 ---
 
 ## 14. Synthetic Dataset Explanation
-Pre-seeded with **40 users**, 5 departments, 5 roles, and 5 SaaS applications (`GitHub`, `Jira`, `HR System`, `Finance System`, `AWS Console`).
-Includes 12 explicitly seeded security anomalies:
-* **Case 1 (Mover Conflict)**: Alex Mercer moved from Developer to HR Manager, retaining leftover GitHub ADMIN access.
-* **Case 2 (Orphaned Leaver)**: Sarah Jenkins status = LEFT, retaining active Finance System WRITE access.
-* **Case 3 (Unapproved Privileged Access)**: David Vance has AWS Console ADMIN access without any approval record.
-* **Case 4 (Critical Leaver)**: Marcus Brody status = LEFT, retaining AWS Console ADMIN access.
+Pre-seeded with **40 contractors**, 5 categories (`IT_SERVICES`, `CONSTRUCTION`, `LOGISTICS`, `SECURITY_SERVICES`, `FACILITIES_MANAGEMENT`), and 3 risk tiers.
+Includes 12 explicitly seeded risk anomalies:
+* **Case 1 (High EMR Safety Incident)**: BuildTech Heavy Dynamics (EMR=1.45, TRIR=4.2, 1 Fatal incident).
+* **Case 2 (Sanction Watchlist Match)**: Sentinel Security Corp (Matched international PEP/OFAC watchlist).
+* **Case 3 (Expired Insurance Policy)**: Titan Civil Construction (Expired COI on file).
+* **Case 4 (Financial Insolvency Risk)**: Omni Freight Freightlines (Credit Score = 38, Debt-to-Equity = 4.2).
 
 ---
 
 ## 15. Baseline Approach
-The Baseline Engine uses a simple 2-source check:
-$$\text{Expected Access (HR Role)} \iff \text{Actual Application Entitlement}$$
-* **Flaws**: Ignores Directory Groups, Approval History, Data Source Freshness, and Rollback. Misses unapproved access and directory-only orphaned access.
+The Naive Baseline Engine uses a simple single-source check:
+$$\text{Check Insurance Policy Expiration Date Only}$$
+* **Flaws**: Ignores OSHA safety EMR/TRIR rates, Sanction Watchlists, Financial Credit Profiles, SOC2 Certifications, and Data Source Freshness. High rate of false positives and missed critical safety violations.
 
 ---
 
 ## 16. Prototype Approach
-The Prototype Engine combines 4 data sources with resilience logic:
-$$\text{Multi-Source Evidence (HR + Dir + App + Approvals)} \xrightarrow{\text{Health \& Confidence}} \text{Risk Classifier} \xrightarrow{\text{Safety Gate}} \text{Accountable Approval} \xrightarrow{\text{Remediation / Rollback}}$$
+The Prototype Engine combines 4 data feeds with resilience logic:
+$$\text{Multi-Source Feeds (Safety + Insurance + Financial + Sanctions)} \xrightarrow{\text{Health \& Confidence}} \text{Risk Classifier} \xrightarrow{\text{Safety Gate}} \text{Dual-Control Approval} \xrightarrow{\text{Remediation / Rollback}}$$
 * Computes dynamic confidence scores: Base $1.0 - \Delta_{\text{Stale}} - \Delta_{\text{Delayed}} - \Delta_{\text{Unavailable}}$.
-* Forces human review when Confidence $< 0.75$ or Risk is `HIGH`/`CRITICAL`.
+* Forces human review when Confidence $< 0.75$ or Risk Score $\ge 65.0$.
 
 ---
 
 ## 17. Failure Test Cases
-1. **HR Data Delayed Scenario**: Marks HR as `STALE`. Confidence drops to 80%. Prevents automated removal.
-2. **Directory Service Unavailable Scenario**: Marks Directory as `UNAVAILABLE`. Engine continues using HR and Entitlement data.
-3. **Leaver Privileged Access**: Status `LEFT` with `ADMIN` permission triggers `CRITICAL` risk and 15-minute target SLA.
+1. **OSHA Feed Delayed Scenario**: Marks OSHA feed as `STALE`. Confidence drops to 85%. Enforces safety gate.
+2. **Sanction Watchlist Match Scenario**: Matches PEP/OFAC watchlist. Triggers `CRITICAL` risk and 15-minute SLA target.
+3. **Dual-Control Enforcement**: Blocks self-approval attempts when Reviewer ID matches Initiator ID.
 
 ---
 
 ## 18. Evaluation Methodology
-Both engines run against the exact same synthetic dataset ($N=12$ ground truth issues).
+Both engines run against the exact same synthetic dataset ($N=12$ ground truth risk issues).
 We measure:
 * $\text{Precision} = \frac{TP}{TP + FP}$
 * $\text{Recall} = \frac{TP}{TP + FN}$
@@ -244,18 +246,17 @@ We measure:
 ---
 
 ## 20. Error Analysis
-* **Why Baseline Failed**: Lacks approval history integration (failed to detect unapproved access) and lacks directory group feeds (failed to detect directory-only leavers).
+* **Why Baseline Failed**: Lacks safety EMR feed (missed safety violations) and lacks sanctions feed (missed PEP watchlist match).
 * **How Prototype Solved It**: Multi-source ingestion coupled with confidence-aware safety gates ensured 100% recall without false positives.
 
 ---
 
 ## 21. Limitations
-* Synthetic dataset is stored in DB rather than live SCIM / SAML API connections.
-* Multi-factor approval workflows are simulated via REST API calls.
+* Synthetic dataset is stored in DB rather than live OSHA / D&B / OFAC API connections.
+* Multi-factor dual-control workflows are simulated via REST API calls.
 
 ---
 
 ## 22. Future Improvements
-* Real SCIM 2.0 and Okta/Azure AD Webhook integrations.
-* Machine-learning policy inference for automated role boundary suggestions.
-* Automated Slack / Microsoft Teams approval notification webhooks.
+* Real D&B Credit API and Okta / SAML webhook integrations.
+* Machine-learning risk score prediction based on historical vendor performance.
