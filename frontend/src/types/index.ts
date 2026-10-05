@@ -1,167 +1,200 @@
-export type EmploymentStatus = 'ACTIVE' | 'LEFT' | 'ON_LEAVE';
+export type ContractorCategory =
+  | 'IT_SERVICES'
+  | 'CONSTRUCTION'
+  | 'LOGISTICS'
+  | 'SECURITY_SERVICES'
+  | 'FACILITIES_MANAGEMENT';
 
-export type PermissionLevel = 'NONE' | 'READ' | 'USER' | 'WRITE' | 'ADMIN';
+export type RiskTier = 'TIER_1_CRITICAL' | 'TIER_2_HIGH' | 'TIER_3_MEDIUM';
 
-export type IssueType = 
-  | 'ORPHANED_ACCESS' 
-  | 'EXCESSIVE_ACCESS' 
-  | 'UNAPPROVED_ACCESS' 
-  | 'MISSING_ACCESS' 
-  | 'ROLE_CHANGE_ACCESS_CONFLICT';
+export type QualificationStatus =
+  | 'QUALIFIED'
+  | 'CONDITIONALLY_QUALIFIED'
+  | 'PENDING_REVIEW'
+  | 'SUSPENDED'
+  | 'DISQUALIFIED';
+
+export type AnomalyType =
+  | 'HIGH_EMR_SAFETY_VIOLATION'
+  | 'EXPIRED_INSURANCE_DEFICIT'
+  | 'FINANCIAL_INSOLVENCY_RISK'
+  | 'SANCTION_WATCHLIST_MATCH'
+  | 'MISSING_SECURITY_CERTIFICATION';
 
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
-export type HealthState = 'AVAILABLE' | 'DELAYED' | 'STALE' | 'UNAVAILABLE';
+export type HealthState = 'AVAILABLE' | 'STALE' | 'DELAYED' | 'UNAVAILABLE';
 
-export type RemediationStatus = 
-  | 'RECOMMENDED' 
-  | 'PENDING_REVIEW' 
-  | 'APPROVED' 
-  | 'REJECTED' 
-  | 'EXECUTED' 
-  | 'FAILED' 
+export type RemediationStatus =
+  | 'PENDING_APPROVAL'
+  | 'APPROVED'
+  | 'EXECUTED'
+  | 'REJECTED'
   | 'ROLLED_BACK';
 
-export type RemediationActionType = 
-  | 'REMOVE_ACCESS' 
-  | 'REDUCE_PERMISSION' 
-  | 'ADD_ACCESS' 
-  | 'ADD_TO_GROUP' 
-  | 'REMOVE_FROM_GROUP';
-
-export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
-
-export type EventType = 
-  | 'RECONCILIATION_STARTED' 
-  | 'DATA_SOURCE_UNAVAILABLE' 
-  | 'DATA_SOURCE_STALE' 
-  | 'ISSUE_DETECTED' 
-  | 'REMEDIATION_CREATED' 
-  | 'REVIEW_REQUESTED' 
-  | 'APPROVAL_GRANTED' 
-  | 'APPROVAL_REJECTED' 
-  | 'ACCESS_REMOVED' 
-  | 'ACCESS_REDUCED' 
-  | 'ROLLBACK_EXECUTED' 
-  | 'DATA_SOURCE_HEALTH_CHANGED';
-
-export type EngineType = 'PROTOTYPE' | 'BASELINE';
-
-export interface Employee {
-  employeeId: string;
-  userId: string;
-  name: string;
-  email: string;
-  department: string;
-  currentRole: string;
-  previousRole?: string;
-  employmentStatus: EmploymentStatus;
-  joinDate: string;
-  lastRoleChangeDate?: string;
-  lastUpdated: string;
+export interface Contractor {
+  id: number;
+  vendorCode: string;
+  companyName: string;
+  category: ContractorCategory;
+  riskTier: RiskTier;
+  status: QualificationStatus;
+  primaryContact: string;
+  contactEmail: string;
+  contractValueUsd: number;
+  onboardedAt: string;
+  lastEvaluatedAt: string;
 }
 
-export interface RolePolicy {
-  id?: number;
-  roleName: string;
-  applicationName: string;
-  expectedPermission: PermissionLevel;
-  required: boolean;
-}
-
-export interface DataSourceHealth {
-  sourceName: string;
-  status: HealthState;
-  lastUpdated: string;
-  freshness: string;
-  recordsCount: number;
-}
-
-export interface ReconciliationIssue {
-  issueId: string;
-  userId: string;
-  employeeName: string;
-  currentRole: string;
-  issueType: IssueType;
-  applicationName: string;
-  expectedAccess?: PermissionLevel;
-  actualAccess?: PermissionLevel;
+export interface ContractorRiskAnomaly {
+  id: number;
+  vendorCode: string;
+  companyName: string;
+  anomalyType: AnomalyType;
   riskLevel: RiskLevel;
-  confidenceScore: number;
-  engineType: EngineType;
-  recommendedAction: RemediationActionType;
-  status: string;
+  compositeRiskScore: number;
+  dataConfidenceScore: number;
+  description: string;
+  evidenceDetails: string;
+  slaTargetMinutes: number;
+  detectionEngine: 'PROTOTYPE' | 'BASELINE';
+  safetyGateTriggered: boolean;
   detectedAt: string;
-  remediatedAt?: string;
-  remediationTimeMinutes?: number;
-  targetTimeMinutes?: number;
-  metTarget?: boolean;
 }
 
-export interface RemediationAction {
-  remediationId: string;
-  issueId: string;
-  userId: string;
-  applicationName: string;
-  actionType: RemediationActionType;
-  previousState: string;
-  proposedState: string;
+export interface QualificationAction {
+  id: number;
+  anomalyId?: number;
+  issueId?: number;
+  username?: string;
+  fullName?: string;
+  vendorCode?: string;
+  companyName?: string;
+  actionType: string;
+  appName?: string;
   status: RemediationStatus;
-  requestedBy: string;
+  previousQualificationStatus?: QualificationStatus;
+  targetQualificationStatus?: QualificationStatus;
+  previousPermissionLevel?: string;
+  targetPermissionLevel?: string;
+  rationale: string;
+  initiatedBy: string;
   approvedBy?: string;
-  reviewerComment?: string;
   createdAt: string;
   executedAt?: string;
   rolledBackAt?: string;
-  rollbackReason?: string;
+  stakeholderValidated?: boolean;
+  validatedBy?: string;
+  validationNotes?: string;
+  validatedAt?: string;
+}
+
+export interface DataSourceHealth {
+  id: number;
+  sourceName: string;
+  status: HealthState;
+  latencyMs: number;
+  dataStalenessHours: number;
+  lastSyncTime: string;
 }
 
 export interface AuditEvent {
-  auditId: string;
-  timestamp: string;
-  eventType: EventType;
-  userId: string;
+  id: number;
+  eventType: string;
   actor: string;
-  action: string;
-  previousState?: string;
-  newState?: string;
-  reason?: string;
-  relatedIssueId?: string;
-  relatedApprovalId?: string;
-  dataSourcesUsed?: string;
+  targetEntity: string;
+  details: string;
+  timestamp: string;
 }
 
 export interface DashboardSummary {
-  totalUsers: number;
-  activeIssues: number;
-  criticalIssues: number;
-  orphanedAccessCount: number;
-  excessiveAccessCount: number;
-  unapprovedAccessCount: number;
-  missingAccessCount: number;
+  totalContractors: number;
+  qualifiedContractors: number;
+  pendingReviewContractors: number;
+  highRiskAnomaliesCount: number;
   pendingApprovalsCount: number;
-  targetCompliancePercentage: number;
-  avgRemediationTimeMinutes: number;
-  dataSources: DataSourceHealth[];
+  executedRemediationsCount: number;
+  averageDataConfidence: number;
+  dataSourceHealthMap: Record<string, HealthState>;
 }
 
 export interface EvaluationMetrics {
-  groundTruthIssuesCount: number;
-  baselineDetectedCount: number;
-  baselineTruePositives: number;
-  baselineFalsePositives: number;
-  baselineFalseNegatives: number;
-  baselinePrecision: number;
-  baselineRecall: number;
-  baselineDetectionRate: number;
-  baselineTargetComplianceRate: number;
-  prototypeDetectedCount: number;
-  prototypeTruePositives: number;
-  prototypeFalsePositives: number;
-  prototypeFalseNegatives: number;
-  prototypePrecision: number;
-  prototypeRecall: number;
-  prototypeDetectionRate: number;
-  prototypeTargetComplianceRate: number;
-  errorAnalysisNotes: string[];
+  engineName: string;
+  groundTruthCount: number;
+  detectedIssuesCount: number;
+  truePositives: number;
+  falsePositives: number;
+  falseNegatives: number;
+  precision: number;
+  recall: number;
+  detectionRate: number;
+  targetSlaComplianceRate: number;
+}
+
+export interface SlaPerformance {
+  slaCategory: string;
+  targetSlaMinutes: number;
+  observedMeanMttrMinutes: number;
+  varianceMttr: number;
+  stdDevMttr: number;
+  slaCompliancePercentage: number;
+  totalIssuesEvaluated: number;
+  slaBreachesCount: number;
+}
+
+export interface ConfidenceErrorAnalysis {
+  confidenceBand: string;
+  rationale: string;
+  issueCount: number;
+  falsePositives: number;
+  falseNegatives: number;
+  precision: number;
+  remediationStrategy: string;
+  observedOutputDetails: string;
+}
+
+export interface ExperimentResult {
+  engineName: string;
+  totalTrials: number;
+  meanPrecision: number;
+  stdDevPrecision: number;
+  stdErrPrecision: number;
+  ci95PrecisionLower: number;
+  ci95PrecisionUpper: number;
+  meanRecall: number;
+  stdDevRecall: number;
+  stdErrRecall: number;
+  ci95RecallLower: number;
+  ci95RecallUpper: number;
+  meanF1Score: number;
+  stdDevF1Score: number;
+  meanSlaComplianceRate: number;
+  stdDevSlaComplianceRate: number;
+  slaPerformances: SlaPerformance[];
+  errorAnalyses: ConfidenceErrorAnalysis[];
+}
+
+export interface NotificationAlert {
+  id: string;
+  title: string;
+  message: string;
+  severity: 'CRITICAL' | 'WARNING' | 'INFO';
+  targetTab: string;
+  referenceId?: number;
+  timestamp: string;
+  read: boolean;
+}
+
+export interface RiskThresholdPolicy {
+  id?: number;
+  policyName: string;
+  maxAllowedEmr: number;
+  maxAllowedTrir: number;
+  minInsuranceLimitMillion: number;
+  minCreditScore: number;
+  safetyWeight: number;
+  financialWeight: number;
+  insuranceWeight: number;
+  sanctionWeight: number;
+  confidenceSafetyGateThreshold: number;
 }

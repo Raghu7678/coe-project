@@ -1,97 +1,104 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Activity, Server, RefreshCw, AlertTriangle } from 'lucide-react';
 import { DataSourceHealth, HealthState } from '../types';
-import { Activity, Database, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
+import { api } from '../services/api';
 
-interface Props {
-  dataSources: DataSourceHealth[];
-  onUpdateHealth: (sourceName: string, status: HealthState, freshness?: string) => Promise<void>;
-  onRunReconciliation: () => void;
-}
+export const DataSourceHealthPage: React.FC = () => {
+  const [healthList, setHealthList] = useState<DataSourceHealth[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export const DataSourceHealthPage: React.FC<Props> = ({ dataSources, onUpdateHealth, onRunReconciliation }) => {
-  const handleStatusChange = async (sourceName: string, status: HealthState) => {
-    let freshness = 'Fresh';
-    if (status === 'STALE') freshness = 'Stale (48h delay)';
-    if (status === 'DELAYED') freshness = 'Delayed (Sync lag)';
-    if (status === 'UNAVAILABLE') freshness = 'Service Outage / Offline';
+  const loadHealth = async () => {
+    setLoading(true);
+    try {
+      const res = await api.getDataSourceHealth();
+      setHealthList(res);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    await onUpdateHealth(sourceName, status, freshness);
+  useEffect(() => {
+    loadHealth();
+  }, []);
+
+  const handleUpdateStatus = async (sourceName: string, status: HealthState) => {
+    try {
+      const staleness = status === 'STALE' ? 24.0 : status === 'DELAYED' ? 72.0 : status === 'UNAVAILABLE' ? 168.0 : 0.5;
+      const latency = status === 'UNAVAILABLE' ? 9999 : status === 'DELAYED' ? 4500 : status === 'STALE' ? 850 : 25;
+      await api.updateDataSourceHealth(sourceName, status, latency, staleness);
+      await loadHealth();
+    } catch (err) {
+      alert((err as Error).message);
+    }
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="space-y-6">
       <div>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-          Data Source Health & Outage Simulator
+        <h2 className="text-2xl font-bold text-white tracking-wide flex items-center space-x-3">
+          <Activity className="w-6 h-6 text-cyan-400" />
+          <span>Multi-Source Feeds Health Console</span>
         </h2>
-        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-          Manage integration endpoints and simulate delayed, stale, or unavailable data sources to test engine resilience and confidence-aware safety gates.
+        <p className="text-sm text-slate-400">
+          Monitor and simulate data source health states (Financial, OSHA Safety, Insurance COI, Sanctions Watchlist) to observe dynamic confidence calculation.
         </p>
       </div>
 
-      {/* Grid of Data Source Health Controls */}
-      <div className="grid-2">
-        {dataSources.map((source) => (
-          <div key={source.sourceName} className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Database size={18} color="var(--accent-cyan)" />
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'white' }}>{source.sourceName}</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {loading ? (
+          <div className="col-span-2 text-center py-12 text-slate-500 font-mono">Loading data feeds...</div>
+        ) : (
+          healthList.map((feed) => (
+            <div key={feed.id} className="p-6 bg-slate-900/70 rounded-2xl border border-slate-800 space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center space-x-3">
+                  <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                    <Server className="w-5 h-5 text-cyan-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white font-mono">{feed.sourceName}</h3>
+                    <p className="text-xs text-slate-400 font-mono">
+                      Staleness: {feed.dataStalenessHours}h | Latency: {feed.latencyMs}ms
+                    </p>
+                  </div>
+                </div>
+
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-mono font-bold ${
+                    feed.status === 'AVAILABLE'
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      : feed.status === 'STALE'
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                      : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                  }`}
+                >
+                  {feed.status}
+                </span>
               </div>
-              <span className={`badge badge-health-${source.status}`}>
-                {source.status}
-              </span>
-            </div>
 
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-              <div>Freshness: <strong style={{ color: 'white' }}>{source.freshness}</strong></div>
-              <div>Last Synced: <strong style={{ color: 'white' }}>{new Date(source.lastUpdated).toLocaleString()}</strong></div>
-              <div>Cached Records: <strong style={{ color: 'white' }}>{source.recordsCount || 'Dynamic'}</strong></div>
-            </div>
-
-            {/* Simulation Status Selector */}
-            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.875rem' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem' }}>
-                SIMULATE HEALTH STATE OVERRIDE:
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.375rem' }}>
-                {(['AVAILABLE', 'STALE', 'DELAYED', 'UNAVAILABLE'] as HealthState[]).map((st) => (
-                  <button
-                    key={st}
-                    onClick={() => handleStatusChange(source.sourceName, st)}
-                    style={{
-                      padding: '0.35rem 0.25rem',
-                      fontSize: '0.7rem',
-                      fontWeight: 700,
-                      borderRadius: '6px',
-                      border: '1px solid var(--border-color)',
-                      background: source.status === st ? 'rgba(59, 130, 246, 0.3)' : 'rgba(255, 255, 255, 0.03)',
-                      color: source.status === st ? '#60a5fa' : 'var(--text-muted)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {st}
-                  </button>
-                ))}
+              <div className="pt-3 border-t border-slate-800 space-y-2">
+                <p className="text-xs text-slate-400 font-mono">Simulate Feed Status Override:</p>
+                <div className="grid grid-cols-4 gap-2 text-xs font-mono">
+                  {(['AVAILABLE', 'STALE', 'DELAYED', 'UNAVAILABLE'] as HealthState[]).map((st) => (
+                    <button
+                      key={st}
+                      onClick={() => handleUpdateStatus(feed.sourceName, st)}
+                      className={`py-1.5 rounded-lg border transition-all ${
+                        feed.status === st
+                          ? 'bg-cyan-600 text-white font-bold border-cyan-400 shadow-md shadow-cyan-950'
+                          : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                      }`}
+                    >
+                      {st}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Test Trigger */}
-      <div className="glass-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(6, 182, 212, 0.05)', border: '1px solid rgba(6, 182, 212, 0.2)' }}>
-        <div>
-          <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--accent-cyan)' }}>
-            Test Engine Data Resilience
-          </h4>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            After changing a data source status above, run reconciliation to verify confidence score reduction and safety gate behavior.
-          </p>
-        </div>
-        <button onClick={onRunReconciliation} className="btn btn-primary">
-          <RefreshCw size={15} /> Run Resilient Reconciliation
-        </button>
+          ))
+        )}
       </div>
     </div>
   );

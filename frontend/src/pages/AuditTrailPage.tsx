@@ -1,149 +1,143 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { History, Shield, Search, Download } from 'lucide-react';
 import { AuditEvent } from '../types';
-import { History, Search, Filter, ShieldCheck, ArrowRight } from 'lucide-react';
+import { api } from '../services/api';
 
-interface Props {
-  auditEvents: AuditEvent[];
-}
+export const AuditTrailPage: React.FC = () => {
+  const [logs, setLogs] = useState<AuditEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
-export const AuditTrailPage: React.FC<Props> = ({ auditEvents }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedEventType, setSelectedEventType] = useState('ALL');
+  const loadLogs = async () => {
+    setLoading(true);
+    try {
+      const res = await api.getAuditLogs();
+      setLogs(res);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filteredEvents = auditEvents.filter((event) => {
-    const matchesSearch =
-      event.userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.actor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (event.reason && event.reason.toLowerCase().includes(searchTerm.toLowerCase()));
+  useEffect(() => {
+    loadLogs();
+  }, []);
 
-    const matchesType = selectedEventType === 'ALL' || event.eventType === selectedEventType;
-
-    return matchesSearch && matchesType;
-  });
+  const filteredLogs = logs.filter(
+    (l) =>
+      l.eventType.toLowerCase().includes(search.toLowerCase()) ||
+      l.actor.toLowerCase().includes(search.toLowerCase()) ||
+      l.targetEntity.toLowerCase().includes(search.toLowerCase()) ||
+      l.details.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <div>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-          Immutable Audit Trail
-        </h2>
-        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-          Complete tamper-evident log of all reconciliation runs, issue detections, approval decisions, access removals, and rollbacks.
-        </p>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-white tracking-wide flex items-center space-x-3">
+            <History className="w-6 h-6 text-cyan-400" />
+            <span>Immutable Audit Trail & Ledger</span>
+          </h2>
+          <p className="text-sm text-slate-400">
+            Append-only historical ledger tracking every evaluation run, safety gate trigger, approval decision, remediation execution, stakeholder validation, and rollback.
+          </p>
+        </div>
+
+        <a
+          href={api.getAuditCsvExportUrl()}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-mono font-bold rounded-xl border border-cyan-800/50 flex items-center space-x-2 transition-all"
+        >
+          <Download className="w-4 h-4" />
+          <span>Export Audit Log CSV</span>
+        </a>
       </div>
 
-      {/* Filter Controls */}
-      <div className="glass-card" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ flex: 1, minWidth: '240px', position: 'relative' }}>
-          <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)' }} />
+      <div className="flex justify-between items-center bg-slate-900/70 p-4 rounded-xl border border-slate-800">
+        <div className="relative w-full md:w-80">
+          <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by user ID, actor, action, or reason..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '0.5rem 0.875rem 0.5rem 2.5rem',
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '8px',
-              color: 'white',
-              fontSize: '0.875rem',
-              outline: 'none',
-            }}
+            placeholder="Search audit trail event, actor, entity..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 font-mono"
           />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Filter size={15} color="var(--text-muted)" />
-          <select
-            value={selectedEventType}
-            onChange={(e) => setSelectedEventType(e.target.value)}
-            style={{
-              padding: '0.5rem 0.875rem',
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '8px',
-              color: 'white',
-              fontSize: '0.85rem',
-            }}
-          >
-            <option value="ALL">All Event Types</option>
-            <option value="RECONCILIATION_STARTED">Reconciliation Started</option>
-            <option value="ISSUE_DETECTED">Issue Detected</option>
-            <option value="APPROVAL_GRANTED">Approval Granted</option>
-            <option value="APPROVAL_REJECTED">Approval Rejected</option>
-            <option value="ACCESS_REMOVED">Access Removed</option>
-            <option value="ACCESS_REDUCED">Access Reduced</option>
-            <option value="ROLLBACK_EXECUTED">Rollback Executed</option>
-            <option value="DATA_SOURCE_HEALTH_CHANGED">Health Changed</option>
-          </select>
-        </div>
+        <button onClick={loadLogs} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono rounded-lg">
+          Refresh Log Stream
+        </button>
       </div>
 
-      {/* Timeline List */}
-      <div className="data-table-wrapper">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>TIMESTAMP</th>
-              <th>EVENT TYPE</th>
-              <th>AFFECTED USER</th>
-              <th>ACTOR</th>
-              <th>ACTION</th>
-              <th>STATE CHANGE & REASON</th>
-              <th>DATA SOURCES</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredEvents.length === 0 ? (
+      <div className="bg-slate-900/70 rounded-2xl border border-slate-800 overflow-hidden">
+        <div className="p-4 border-b border-slate-800 flex justify-between items-center">
+          <h3 className="text-sm font-bold text-white uppercase font-mono tracking-wider">
+            Audit Events Ledger ({filteredLogs.length})
+          </h3>
+          <span className="text-xs font-mono text-emerald-400 flex items-center space-x-1">
+            <Shield className="w-3.5 h-3.5" />
+            <span>CRYPTOGRAPHICALLY APPEND-ONLY</span>
+          </span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm font-sans">
+            <thead className="bg-slate-950 text-xs font-mono text-slate-400 uppercase tracking-wider border-b border-slate-800">
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                  No audit events found.
-                </td>
+                <th className="px-4 py-3">Timestamp</th>
+                <th className="px-4 py-3">Event Type</th>
+                <th className="px-4 py-3">Actor / Principal</th>
+                <th className="px-4 py-3">Target Entity</th>
+                <th className="px-4 py-3">Audit Log Rationale & Evidence</th>
               </tr>
-            ) : (
-              filteredEvents.map((event) => (
-                <tr key={event.auditId}>
-                  <td style={{ fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                    {new Date(event.timestamp).toLocaleString()}
-                  </td>
-                  <td>
-                    <span style={{
-                      fontSize: '0.7rem',
-                      fontWeight: 700,
-                      padding: '0.2rem 0.5rem',
-                      borderRadius: '4px',
-                      background: event.eventType === 'ROLLBACK_EXECUTED' ? 'rgba(249, 115, 22, 0.2)' : (event.eventType === 'ACCESS_REMOVED' || event.eventType === 'ACCESS_REDUCED' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(59, 130, 246, 0.15)'),
-                      color: event.eventType === 'ROLLBACK_EXECUTED' ? 'var(--risk-high)' : (event.eventType === 'ACCESS_REMOVED' || event.eventType === 'ACCESS_REDUCED' ? '#34d399' : '#60a5fa'),
-                    }}>
-                      {event.eventType}
-                    </span>
-                  </td>
-                  <td style={{ fontWeight: 600, color: 'white' }}>{event.userId}</td>
-                  <td style={{ fontWeight: 600, color: 'var(--accent-cyan)' }}>{event.actor}</td>
-                  <td style={{ fontSize: '0.85rem' }}>{event.action}</td>
-                  <td>
-                    <div style={{ fontSize: '0.8rem' }}>
-                      {event.previousState && event.newState && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.2rem' }}>
-                          <span style={{ color: '#f87171' }}>{event.previousState}</span>
-                          <span>→</span>
-                          <span style={{ color: '#34d399' }}>{event.newState}</span>
-                        </div>
-                      )}
-                      {event.reason && <div style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>"{event.reason}"</div>}
-                    </div>
-                  </td>
-                  <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {event.dataSourcesUsed || 'N/A'}
+            </thead>
+            <tbody className="divide-y divide-slate-800/60 font-mono text-slate-300 text-xs">
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-slate-500 text-sm">
+                    Loading audit trail logs...
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : filteredLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-slate-500 text-sm">
+                    No matching audit events found.
+                  </td>
+                </tr>
+              ) : (
+                filteredLogs.map((log) => (
+                  <tr key={log.id} className="hover:bg-slate-800/40 transition-colors">
+                    <td className="px-4 py-3 text-slate-400 whitespace-nowrap">
+                      {new Date(log.timestamp).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 font-bold">
+                      <span
+                        className={`px-2 py-0.5 rounded ${
+                          log.eventType.includes('SAFETY') || log.eventType.includes('REJECTED')
+                            ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                            : log.eventType.includes('ROLLBACK')
+                            ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                            : log.eventType.includes('STAKEHOLDER')
+                            ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+                            : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                        }`}
+                      >
+                        {log.eventType}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-bold text-white">{log.actor}</td>
+                    <td className="px-4 py-3 text-cyan-400">{log.targetEntity}</td>
+                    <td className="px-4 py-3 text-slate-300 font-sans text-xs">{log.details}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

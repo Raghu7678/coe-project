@@ -1,151 +1,168 @@
 import React from 'react';
+import {
+  Users,
+  ShieldCheck,
+  AlertTriangle,
+  Clock,
+  RefreshCw,
+  Activity,
+  ArrowRight
+} from 'lucide-react';
 import { DashboardSummary } from '../types';
-import { ShieldAlert, Users, AlertTriangle, CheckCircle, Clock, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
 
-interface Props {
+interface DashboardProps {
   summary: DashboardSummary | null;
   onNavigate: (tab: string) => void;
 }
 
-export const Dashboard: React.FC<Props> = ({ summary, onNavigate }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ summary, onNavigate }) => {
   if (!summary) {
-    return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>Loading security dashboard metrics...</div>;
+    return (
+      <div className="p-8 text-center text-slate-400 font-mono">
+        Loading executive dashboard metrics...
+      </div>
+    );
   }
 
+  const confidencePct = Math.round(summary.averageDataConfidence * 100);
+
+  const kpis = [
+    {
+      title: 'Total Contractors',
+      value: summary.totalContractors,
+      icon: Users,
+      color: 'from-blue-600/20 to-cyan-600/20 border-cyan-500/30 text-cyan-400',
+      subtitle: 'Evaluated vendors'
+    },
+    {
+      title: 'Fully Qualified',
+      value: summary.qualifiedContractors,
+      icon: ShieldCheck,
+      color: 'from-emerald-600/20 to-teal-600/20 border-emerald-500/30 text-emerald-400',
+      subtitle: 'Cleared & complaint'
+    },
+    {
+      title: 'High/Critical Risk Flags',
+      value: summary.highRiskAnomaliesCount,
+      icon: AlertTriangle,
+      color: 'from-rose-600/20 to-amber-600/20 border-rose-500/30 text-rose-400',
+      subtitle: 'Action required'
+    },
+    {
+      title: 'Pending Approvals',
+      value: summary.pendingApprovalsCount,
+      icon: Clock,
+      color: 'from-amber-600/20 to-yellow-600/20 border-amber-500/30 text-amber-400',
+      subtitle: 'Dual-control queue'
+    },
+    {
+      title: 'Executed Remediations',
+      value: summary.executedRemediationsCount,
+      icon: RefreshCw,
+      color: 'from-purple-600/20 to-indigo-600/20 border-purple-500/30 text-purple-400',
+      subtitle: 'With rollback support'
+    },
+    {
+      title: 'Data Feed Confidence',
+      value: `${confidencePct}%`,
+      icon: Activity,
+      color: confidencePct >= 75 ? 'from-teal-600/20 to-emerald-600/20 border-teal-500/30 text-teal-400' : 'from-amber-600/20 to-rose-600/20 border-amber-500/30 text-amber-400',
+      subtitle: 'Multi-source health'
+    }
+  ];
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-      {/* Page Header */}
-      <div>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-          Security Posture & Reconciliation Overview
-        </h2>
-        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-          Real-time Joiner-Mover-Leaver (JML) risk monitoring, data source health, and compliance target tracking.
-        </p>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-white tracking-wide">Executive Risk Overview</h2>
+          <p className="text-sm text-slate-400">Real-time status of contractor safety, financial stability, insurance compliance, and sanctions.</p>
+        </div>
+        <button
+          onClick={() => onNavigate('assessment')}
+          className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-semibold rounded-xl flex items-center space-x-2 shadow-lg shadow-cyan-900/30 transition-all"
+        >
+          <span>Run Pre-Qualification Assessment</span>
+          <ArrowRight className="w-4 h-4" />
+        </button>
       </div>
 
-      {/* Primary Metric Cards */}
-      <div className="grid-4">
-        <div className="glass-card" style={{ borderLeft: '4px solid var(--accent-blue)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>TOTAL USERS MONITORED</span>
-            <Users size={18} color="var(--accent-blue)" />
-          </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, margin: '0.5rem 0 0.25rem 0', color: 'white' }}>
-            {summary.totalUsers}
-          </div>
-          <span style={{ fontSize: '0.75rem', color: 'var(--accent-emerald)' }}>✓ All HR records synced</span>
-        </div>
-
-        <div className="glass-card" style={{ borderLeft: '4px solid var(--risk-critical)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>CRITICAL RISK ISSUES</span>
-            <ShieldAlert size={18} color="var(--risk-critical)" />
-          </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, margin: '0.5rem 0 0.25rem 0', color: 'var(--risk-critical)' }}>
-            {summary.criticalIssues}
-          </div>
-          <span style={{ fontSize: '0.75rem', color: 'var(--risk-critical)' }}>Requires immediate review</span>
-        </div>
-
-        <div className="glass-card" style={{ borderLeft: '4px solid var(--risk-high)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>PENDING APPROVALS</span>
-            <AlertTriangle size={18} color="var(--risk-high)" />
-          </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, margin: '0.5rem 0 0.25rem 0', color: 'var(--risk-high)' }}>
-            {summary.pendingApprovalsCount}
-          </div>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Awaiting security reviewer</span>
-        </div>
-
-        <div className="glass-card" style={{ borderLeft: '4px solid var(--accent-emerald)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>TARGET TIME COMPLIANCE</span>
-            <Clock size={18} color="var(--accent-emerald)" />
-          </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, margin: '0.5rem 0 0.25rem 0', color: 'var(--accent-emerald)' }}>
-            {summary.targetCompliancePercentage}%
-          </div>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Avg removal: {summary.avgRemediationTimeMinutes}m</span>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {kpis.map((kpi, idx) => {
+          const Icon = kpi.icon;
+          return (
+            <div
+              key={idx}
+              className={`p-5 rounded-2xl bg-gradient-to-br ${kpi.color} border backdrop-blur-sm relative overflow-hidden group hover:scale-[1.02] transition-transform`}
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs font-mono font-medium text-slate-400 uppercase tracking-wider">{kpi.title}</p>
+                  <h3 className="text-3xl font-extrabold text-white mt-1 font-mono">{kpi.value}</h3>
+                  <p className="text-xs text-slate-400 mt-1">{kpi.subtitle}</p>
+                </div>
+                <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800">
+                  <Icon className="w-6 h-6" />
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Middle Section: Risk Breakdown & Quick Actions */}
-      <div className="grid-2">
-        {/* Issue Categorization Card */}
-        <div className="glass-card">
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', color: 'var(--text-primary)' }}>
-            Access Risk Breakdown
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="p-6 bg-slate-900/70 rounded-2xl border border-slate-800 space-y-4">
+          <h3 className="text-lg font-bold text-white flex items-center space-x-2">
+            <Activity className="w-5 h-5 text-cyan-400" />
+            <span>Data Feeds Health Matrix</span>
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span className="badge badge-risk-CRITICAL">ORPHANED</span>
-                <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>Leaver Access Retained</span>
+          <div className="space-y-3">
+            {Object.entries(summary.dataSourceHealthMap || {}).map(([feed, status]) => (
+              <div key={feed} className="flex justify-between items-center p-3 bg-slate-950/80 rounded-xl border border-slate-800 font-mono text-sm">
+                <span className="text-slate-300">{feed}</span>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-bold ${
+                    status === 'AVAILABLE'
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      : status === 'STALE'
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                      : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                  }`}
+                >
+                  {status}
+                </span>
               </div>
-              <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--risk-critical)' }}>{summary.orphanedAccessCount}</span>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span className="badge badge-risk-HIGH">EXCESSIVE</span>
-                <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>Privilege Mismatch</span>
-              </div>
-              <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--risk-high)' }}>{summary.excessiveAccessCount}</span>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span className="badge badge-risk-HIGH">UNAPPROVED</span>
-                <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>No Valid Approval Record</span>
-              </div>
-              <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--risk-high)' }}>{summary.unapprovedAccessCount}</span>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span className="badge badge-risk-LOW">MISSING</span>
-                <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>Required Role Access Missing</span>
-              </div>
-              <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--accent-blue)' }}>{summary.missingAccessCount}</span>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Action Panel */}
-        <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
-              Reconciliation Action Center
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-              Execute high-impact access removals, review pending queue, or inspect baseline vs prototype performance metrics.
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <button onClick={() => onNavigate('reconciliation')} className="btn btn-primary" style={{ justifyContent: 'space-between' }}>
-                <span>Inspect All Detected Issues</span>
-                <ArrowRight size={16} />
-              </button>
-
-              <button onClick={() => onNavigate('approvals')} className="btn btn-secondary" style={{ justifyContent: 'space-between' }}>
-                <span>Accountable Approval Queue ({summary.pendingApprovalsCount})</span>
-                <ArrowRight size={16} />
-              </button>
-
-              <button onClick={() => onNavigate('evaluation')} className="btn btn-secondary" style={{ justifyContent: 'space-between' }}>
-                <span>Run Empirical Baseline vs Prototype Experiment</span>
-                <Zap size={16} color="var(--accent-cyan)" />
-              </button>
+        <div className="p-6 bg-slate-900/70 rounded-2xl border border-slate-800 space-y-4">
+          <h3 className="text-lg font-bold text-white flex items-center space-x-2">
+            <ShieldCheck className="w-5 h-5 text-emerald-400" />
+            <span>Core System Capabilities</span>
+          </h3>
+          <div className="space-y-3 font-sans text-sm text-slate-300">
+            <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 flex items-start space-x-3">
+              <div className="w-2 h-2 rounded-full bg-cyan-400 mt-1.5 shrink-0" />
+              <div>
+                <p className="font-semibold text-white">Multi-Source Pre-Qualification</p>
+                <p className="text-xs text-slate-400">Ingests OSHA safety records (EMR/TRIR), Certificate of Insurance (COI), financial credit profiles, and OFAC sanction watchlists.</p>
+              </div>
             </div>
-          </div>
-
-          <div style={{ marginTop: '1.5rem', padding: '0.75rem', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <ShieldCheck size={20} color="var(--accent-emerald)" />
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-              Target Time SLA Enforced: Critical Leavers (15m), Privileged High Risk (60m), Medium Risk (24h).
-            </span>
+            <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 flex items-start space-x-3">
+              <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+              <div>
+                <p className="font-semibold text-white">Safety Gates & Dual-Control Approvals</p>
+                <p className="text-xs text-slate-400">High-risk contractors (Score &gt; 65) or low data confidence (&lt; 0.75) trigger safety gates routing to the approval queue. Strictly forbids self-approval.</p>
+              </div>
+            </div>
+            <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 flex items-start space-x-3">
+              <div className="w-2 h-2 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
+              <div>
+                <p className="font-semibold text-white">Instant Status Rollback & Immutable Audit</p>
+                <p className="text-xs text-slate-400">Restores prior vendor qualification state upon rollback while writing an append-only audit event preserving historical records.</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

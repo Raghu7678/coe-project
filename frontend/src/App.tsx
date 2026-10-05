@@ -1,196 +1,101 @@
 import React, { useState, useEffect } from 'react';
-import { Sidebar } from './components/Sidebar';
 import { Navbar } from './components/Navbar';
+import { Sidebar } from './components/Sidebar';
 import { DataSourceHealthBanner } from './components/DataSourceHealthBanner';
 
 import { Dashboard } from './pages/Dashboard';
-import { ReconciliationPage } from './pages/ReconciliationPage';
-import { IssueDetailPage } from './pages/IssueDetailPage';
+import { RiskAssessmentPage } from './pages/RiskAssessmentPage';
+import { AnomalyDetailPage } from './pages/AnomalyDetailPage';
 import { ApprovalQueuePage } from './pages/ApprovalQueuePage';
-import { RemediationRollbackPage } from './pages/RemediationRollbackPage';
+import { QualificationRemediationPage } from './pages/QualificationRemediationPage';
 import { AuditTrailPage } from './pages/AuditTrailPage';
 import { DataSourceHealthPage } from './pages/DataSourceHealthPage';
 import { PolicyManagementPage } from './pages/PolicyManagementPage';
 import { EvaluationMetricsPage } from './pages/EvaluationMetricsPage';
 
-import {
-  DashboardSummary,
-  ReconciliationIssue,
-  RemediationAction,
-  AuditEvent,
-  DataSourceHealth,
-  RolePolicy,
-  HealthState,
-} from './types';
+import { DashboardSummary, DataSourceHealth } from './types';
 import { api } from './services/api';
 
-export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [engineType, setEngineType] = useState<'PROTOTYPE' | 'BASELINE'>('PROTOTYPE');
-  const [isReconciling, setIsReconciling] = useState(false);
-
-  // Data states
+export function App() {
+  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [selectedAnomalyId, setSelectedAnomalyId] = useState<number | null>(null);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [issues, setIssues] = useState<ReconciliationIssue[]>([]);
-  const [pendingApprovals, setPendingApprovals] = useState<RemediationAction[]>([]);
-  const [remediations, setRemediations] = useState<RemediationAction[]>([]);
-  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
-  const [dataSources, setDataSources] = useState<DataSourceHealth[]>([]);
-  const [policies, setPolicies] = useState<RolePolicy[]>([]);
+  const [healthList, setHealthList] = useState<DataSourceHealth[]>([]);
 
-  // Selected issue for detail modal
-  const [selectedIssue, setSelectedIssue] = useState<ReconciliationIssue | null>(null);
-
-  const loadAllData = async () => {
+  const refreshGlobalState = async () => {
     try {
-      const [sumRes, issuesRes, approvalsRes, remediationsRes, auditRes, healthRes, policiesRes] = await Promise.all([
-        api.getDashboardSummary().catch(() => null),
-        api.getIssues(engineType).catch(() => []),
-        api.getPendingApprovals().catch(() => []),
-        api.getAllRemediations().catch(() => []),
-        api.getAuditTrail().catch(() => []),
-        api.getDataSourceHealth().catch(() => []),
-        api.getPolicies().catch(() => []),
+      const [sumRes, healthRes] = await Promise.all([
+        api.getDashboardSummary(),
+        api.getDataSourceHealth()
       ]);
-
-      if (sumRes) setSummary(sumRes);
-      setIssues(issuesRes);
-      setPendingApprovals(approvalsRes);
-      setRemediations(remediationsRes);
-      setAuditEvents(auditRes);
-      setDataSources(healthRes);
-      setPolicies(policiesRes);
+      setSummary(sumRes);
+      setHealthList(healthRes);
     } catch (err) {
-      console.error('Failed loading app data', err);
+      console.error('API Sync Error:', err);
     }
   };
 
   useEffect(() => {
-    loadAllData();
-  }, [engineType]);
+    refreshGlobalState();
+    const interval = setInterval(refreshGlobalState, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const handleRunReconciliation = async () => {
-    try {
-      setIsReconciling(true);
-      await api.runReconciliation(engineType);
-      await loadAllData();
-    } catch (err: any) {
-      alert(`Reconciliation error: ${err.message}`);
-    } finally {
-      setIsReconciling(false);
-    }
-  };
-
-  const handleApprovalDecision = async (
-    remediationId: string,
-    reviewerId: string,
-    decision: 'APPROVE' | 'REJECT',
-    comment: string
-  ) => {
-    await api.processApprovalDecision(remediationId, reviewerId, decision, comment);
-    await loadAllData();
-  };
-
-  const handleRollback = async (remediationId: string, actor: string, reason: string) => {
-    await api.rollbackRemediation(remediationId, actor, reason);
-    await loadAllData();
-  };
-
-  const handleUpdateHealth = async (sourceName: string, status: HealthState, freshness?: string) => {
-    await api.updateDataSourceHealth(sourceName, status, freshness);
-    await loadAllData();
-  };
-
-  const handleSavePolicy = async (policy: RolePolicy) => {
-    await api.savePolicy(policy);
-    await loadAllData();
-  };
-
-  const handleDeletePolicy = async (id: number) => {
-    await api.deletePolicy(id);
-    await loadAllData();
+  const handleSelectAnomaly = (id: number) => {
+    setSelectedAnomalyId(id);
+    setActiveTab('anomaly-detail');
   };
 
   return (
-    <div className="app-container">
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        pendingApprovalsCount={pendingApprovals.length}
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
+      <Navbar
+        averageConfidence={summary?.averageDataConfidence || 1.0}
+        healthMap={summary?.dataSourceHealthMap}
       />
 
-      <div className="main-content">
-        <Navbar
-          onRunReconciliation={handleRunReconciliation}
-          isReconciling={isReconciling}
-          dataSources={dataSources}
+      <div className="flex flex-1">
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={(tab) => {
+            setActiveTab(tab);
+            if (tab !== 'anomaly-detail') setSelectedAnomalyId(null);
+          }}
+          pendingApprovalsCount={summary?.pendingApprovalsCount || 0}
         />
 
-        <DataSourceHealthBanner
-          dataSources={dataSources}
-          onNavigateToSources={() => setActiveTab('sources')}
-        />
+        <main className="flex-1 p-8 overflow-y-auto max-w-7xl">
+          <DataSourceHealthBanner healthList={healthList} />
 
-        <main className="page-body">
           {activeTab === 'dashboard' && (
-            <Dashboard summary={summary} onNavigate={setActiveTab} />
+            <Dashboard summary={summary} onNavigate={(tab) => setActiveTab(tab)} />
           )}
 
-          {activeTab === 'reconciliation' && (
-            <ReconciliationPage
-              issues={issues}
-              engineType={engineType}
-              onToggleEngine={(eng) => setEngineType(eng)}
-              onSelectIssue={setSelectedIssue}
+          {activeTab === 'assessment' && (
+            <RiskAssessmentPage onSelectAnomaly={handleSelectAnomaly} />
+          )}
+
+          {activeTab === 'anomaly-detail' && selectedAnomalyId !== null && (
+            <AnomalyDetailPage
+              anomalyId={selectedAnomalyId}
+              onBack={() => setActiveTab('assessment')}
             />
           )}
 
-          {activeTab === 'approvals' && (
-            <ApprovalQueuePage
-              pendingApprovals={pendingApprovals}
-              onDecision={handleApprovalDecision}
-            />
-          )}
+          {activeTab === 'approvals' && <ApprovalQueuePage />}
 
-          {activeTab === 'rollback' && (
-            <RemediationRollbackPage
-              remediations={remediations}
-              onRollback={handleRollback}
-            />
-          )}
+          {activeTab === 'remediation' && <QualificationRemediationPage />}
 
-          {activeTab === 'audit' && (
-            <AuditTrailPage auditEvents={auditEvents} />
-          )}
+          {activeTab === 'audit' && <AuditTrailPage />}
 
-          {activeTab === 'sources' && (
-            <DataSourceHealthPage
-              dataSources={dataSources}
-              onUpdateHealth={handleUpdateHealth}
-              onRunReconciliation={handleRunReconciliation}
-            />
-          )}
+          {activeTab === 'sources' && <DataSourceHealthPage />}
 
-          {activeTab === 'policies' && (
-            <PolicyManagementPage
-              policies={policies}
-              onSavePolicy={handleSavePolicy}
-              onDeletePolicy={handleDeletePolicy}
-            />
-          )}
+          {activeTab === 'policy' && <PolicyManagementPage />}
 
           {activeTab === 'evaluation' && <EvaluationMetricsPage />}
         </main>
       </div>
-
-      {/* Evidence Detail Modal */}
-      {selectedIssue && (
-        <IssueDetailPage
-          issue={selectedIssue}
-          onClose={() => setSelectedIssue(null)}
-          onNavigateToApproval={() => setActiveTab('approvals')}
-        />
-      )}
     </div>
   );
-};
+}
+
+export default App;

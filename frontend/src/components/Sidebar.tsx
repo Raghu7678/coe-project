@@ -1,122 +1,79 @@
 import React from 'react';
 import {
   LayoutDashboard,
-  ShieldAlert,
+  HardHat,
   CheckSquare,
-  RotateCcw,
+  RefreshCw,
   History,
   Activity,
-  FileCode,
-  BarChart3,
-  Users,
+  Sliders,
+  BarChart3
 } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  pendingApprovalsCount: number;
+  pendingApprovalsCount?: number;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, pendingApprovalsCount }) => {
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'reconciliation', label: 'Reconciliation', icon: ShieldAlert },
+export const Sidebar: React.FC<SidebarProps> = ({
+  activeTab,
+  setActiveTab,
+  pendingApprovalsCount = 0
+}) => {
+  const menuItems = [
+    { id: 'dashboard', label: 'Executive Dashboard', icon: LayoutDashboard },
+    { id: 'assessment', label: 'Risk Evaluation Hub', icon: HardHat },
     { id: 'approvals', label: 'Approval Queue', icon: CheckSquare, badge: pendingApprovalsCount },
-    { id: 'rollback', label: 'Remediation & Rollback', icon: RotateCcw },
-    { id: 'audit', label: 'Audit Trail', icon: History },
-    { id: 'sources', label: 'Data Source Health', icon: Activity },
-    { id: 'policies', label: 'Role Access Policies', icon: FileCode },
+    { id: 'remediation', label: 'Remediation & Rollback', icon: RefreshCw },
+    { id: 'audit', label: 'Immutable Audit Trail', icon: History },
+    { id: 'sources', label: 'Data Feeds Health', icon: Activity },
+    { id: 'policy', label: 'Policy Manager', icon: Sliders },
     { id: 'evaluation', label: 'Baseline vs Prototype', icon: BarChart3 },
   ];
 
   return (
-    <aside style={{
-      width: '260px',
-      background: 'var(--bg-secondary)',
-      borderRight: '1px solid var(--border-color)',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '1.25rem 1rem',
-      gap: '1.5rem',
-      flexShrink: 0,
-    }}>
-      {/* Brand Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.5rem 1rem 0.5rem', borderBottom: '1px solid var(--border-color)' }}>
-        <div style={{
-          width: '38px',
-          height: '38px',
-          borderRadius: '10px',
-          background: 'linear-gradient(135deg, #06b6d4, #3b82f6)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          boxShadow: '0 4px 12px rgba(6, 182, 212, 0.4)',
-        }}>
-          <ShieldAlert size={22} />
+    <aside className="w-64 border-r border-cyan-900/40 bg-slate-950/90 flex flex-col justify-between p-4 sticky top-16 h-[calc(100vh-4rem)]">
+      <div className="space-y-1">
+        <div className="px-3 py-2 text-[10px] font-mono tracking-wider text-slate-500 uppercase">
+          NAVIGATION MENU
         </div>
-        <div>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 800, background: 'linear-gradient(90deg, #fff, #93c5fd)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            JML Engine
-          </h2>
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.05em' }}>
-            ACCESS RECONCILIATION
-          </span>
-        </div>
-      </div>
-
-      {/* Navigation List */}
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-        {navItems.map((item) => {
+        {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
           return (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0.75rem 0.875rem',
-                borderRadius: '8px',
-                border: 'none',
-                background: isActive ? 'linear-gradient(90deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.05))' : 'transparent',
-                color: isActive ? '#60a5fa' : 'var(--text-secondary)',
-                fontWeight: isActive ? 600 : 500,
-                cursor: 'pointer',
-                transition: 'var(--transition)',
-                borderLeft: isActive ? '3px solid var(--accent-blue)' : '3px solid transparent',
-              }}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                isActive
+                  ? 'bg-gradient-to-r from-cyan-950/80 to-blue-950/80 border border-cyan-500/40 text-cyan-300 shadow-md shadow-cyan-950/50'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent'
+              }`}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <Icon size={18} color={isActive ? '#60a5fa' : 'var(--text-muted)'} />
-                <span style={{ fontSize: '0.875rem' }}>{item.label}</span>
+              <div className="flex items-center space-x-3">
+                <Icon className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-500'}`} />
+                <span>{item.label}</span>
               </div>
               {item.badge !== undefined && item.badge > 0 && (
-                <span style={{
-                  background: 'var(--risk-high)',
-                  color: 'white',
-                  fontSize: '0.7rem',
-                  fontWeight: 700,
-                  padding: '0.15rem 0.45rem',
-                  borderRadius: '9999px',
-                }}>
+                <span className="px-2 py-0.5 text-xs font-mono font-bold rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse">
                   {item.badge}
                 </span>
               )}
             </button>
           );
         })}
-      </nav>
+      </div>
 
-      {/* System Status Footer */}
-      <div style={{ marginTop: 'auto', padding: '0.875rem', borderRadius: '8px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--border-color)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-emerald)', boxShadow: '0 0 8px var(--accent-emerald)' }}></span>
-          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>Engine Online</span>
+      <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800 text-xs font-mono space-y-1 text-slate-400">
+        <div className="flex justify-between text-slate-300 font-semibold">
+          <span>Target SLA</span>
+          <span className="text-cyan-400">15m - 120m</span>
         </div>
-        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>v1.0.0 • Multi-Source Mode</span>
+        <div className="flex justify-between">
+          <span>Engine</span>
+          <span className="text-emerald-400">PROTOTYPE v2.4</span>
+        </div>
       </div>
     </aside>
   );

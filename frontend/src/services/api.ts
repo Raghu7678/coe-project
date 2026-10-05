@@ -1,93 +1,127 @@
 import {
+  Contractor,
+  ContractorRiskAnomaly,
+  QualificationAction,
+  DataSourceHealth,
+  AuditEvent,
   DashboardSummary,
   EvaluationMetrics,
-  ReconciliationIssue,
-  RemediationAction,
-  AuditEvent,
-  DataSourceHealth,
-  RolePolicy,
-  Employee,
-  HealthState,
+  ExperimentResult,
+  NotificationAlert,
+  RiskThresholdPolicy,
+  HealthState
 } from '../types';
 
-const API_BASE = '/api';
+const API_BASE = 'http://localhost:8080/api';
 
-async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${url}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-    ...options,
-  });
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(errorText || `API error ${res.status}: ${res.statusText}`);
+async function handleResponse<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    const errorText = await response.text();
+    let message = `API Error ${response.status}`;
+    try {
+      const json = JSON.parse(errorText);
+      if (json.message) message = json.message;
+    } catch {
+      if (errorText) message = errorText;
+    }
+    throw new Error(message);
   }
-  return res.json();
+  const data = await response.json();
+  return data as T;
 }
 
 export const api = {
-  // Dashboard & Summary
-  getDashboardSummary: () => fetchJson<DashboardSummary>('/dashboard/summary'),
+  // Dashboard & Contractors
+  getDashboardSummary: (): Promise<DashboardSummary> =>
+    fetch(`${API_BASE}/dashboard/summary`).then((r) => handleResponse<DashboardSummary>(r)),
 
-  // Reconciliation
-  runReconciliation: (engine: 'PROTOTYPE' | 'BASELINE' = 'PROTOTYPE') =>
-    fetchJson<{ engineType: string; issuesDetectedCount: number; executionTimeMs: number; issues: ReconciliationIssue[] }>(
-      `/reconciliation/run?engine=${engine}`,
-      { method: 'POST' }
-    ),
-  getIssues: (engine: 'PROTOTYPE' | 'BASELINE' = 'PROTOTYPE') =>
-    fetchJson<ReconciliationIssue[]>(`/reconciliation/issues?engine=${engine}`),
-  getIssueById: (id: string) => fetchJson<ReconciliationIssue>(`/reconciliation/issues/${id}`),
+  getContractors: (): Promise<Contractor[]> =>
+    fetch(`${API_BASE}/contractors`).then((r) => handleResponse<Contractor[]>(r)),
+
+  getContractorByCode: (code: string): Promise<Contractor> =>
+    fetch(`${API_BASE}/contractors/${code}`).then((r) => handleResponse<Contractor>(r)),
+
+  // Risk Assessment & Anomalies
+  runRiskAssessment: (engine: 'PROTOTYPE' | 'BASELINE' = 'PROTOTYPE'): Promise<ContractorRiskAnomaly[]> =>
+    fetch(`${API_BASE}/reconciliation/run?engine=${engine}`, { method: 'POST' }).then((r) => handleResponse<ContractorRiskAnomaly[]>(r)),
+
+  getAnomalies: (engine: 'PROTOTYPE' | 'BASELINE' = 'PROTOTYPE'): Promise<ContractorRiskAnomaly[]> =>
+    fetch(`${API_BASE}/reconciliation/issues?engine=${engine}`).then((r) => handleResponse<ContractorRiskAnomaly[]>(r)),
+
+  getAnomalyById: (id: number): Promise<ContractorRiskAnomaly> =>
+    fetch(`${API_BASE}/reconciliation/issues/${id}`).then((r) => handleResponse<ContractorRiskAnomaly>(r)),
 
   // Approvals
-  getPendingApprovals: () => fetchJson<RemediationAction[]>('/approvals/pending'),
-  processApprovalDecision: (id: string, reviewerId: string, decision: 'APPROVE' | 'REJECT', comment: string) =>
-    fetchJson<RemediationAction>(`/approvals/${id}/decision`, {
-      method: 'POST',
-      body: JSON.stringify({ reviewerId, decision, comment }),
-    }),
+  getPendingApprovals: (): Promise<QualificationAction[]> =>
+    fetch(`${API_BASE}/approvals/pending`).then((r) => handleResponse<QualificationAction[]>(r)),
 
-  // Remediations & Rollback
-  getAllRemediations: () => fetchJson<RemediationAction[]>('/remediations'),
-  executeRemediation: (id: string, actor: string = 'sec_admin') =>
-    fetchJson<RemediationAction>(`/remediations/${id}/execute?actor=${actor}`, { method: 'POST' }),
-  rollbackRemediation: (id: string, actor: string, reason: string) =>
-    fetchJson<RemediationAction>(`/remediations/${id}/rollback`, {
+  processApprovalDecision: (id: number, reviewerId: string, decision: 'APPROVED' | 'REJECTED', comments: string): Promise<QualificationAction> =>
+    fetch(`${API_BASE}/approvals/${id}/decision`, {
       method: 'POST',
-      body: JSON.stringify({ actor, reason }),
-    }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reviewerId, decision, comments })
+    }).then((r) => handleResponse<QualificationAction>(r)),
 
-  // Audit Trail
-  getAuditTrail: (userId?: string, eventType?: string) => {
-    const params = new URLSearchParams();
-    if (userId) params.append('userId', userId);
-    if (eventType) params.append('eventType', eventType);
-    return fetchJson<AuditEvent[]>(`/audit?${params.toString()}`);
-  },
+  // Qualification Actions & Rollback & Validation
+  getAllActions: (): Promise<QualificationAction[]> =>
+    fetch(`${API_BASE}/remediations`).then((r) => handleResponse<QualificationAction[]>(r)),
+
+  executeAction: (id: number): Promise<QualificationAction> =>
+    fetch(`${API_BASE}/remediations/${id}/execute`, { method: 'POST' }).then((r) => handleResponse<QualificationAction>(r)),
+
+  rollbackAction: (id: number, actor: string = 'ADMIN', reason: string = 'Manual override'): Promise<QualificationAction> =>
+    fetch(`${API_BASE}/remediations/${id}/rollback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actor, reason })
+    }).then((r) => handleResponse<QualificationAction>(r)),
+
+  validateAction: (id: number, validatedBy: string, validationNotes: string): Promise<QualificationAction> =>
+    fetch(`${API_BASE}/remediations/${id}/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ validatedBy, validationNotes })
+    }).then((r) => handleResponse<QualificationAction>(r)),
+
+  // Export URLs
+  getRemediationCsvExportUrl: () => `${API_BASE}/remediations/export/csv`,
+  getRemediationPdfExportUrl: () => `${API_BASE}/remediations/export/pdf`,
+  getAuditCsvExportUrl: () => `${API_BASE}/audit/export/csv`,
+
+  // Audit Logs
+  getAuditLogs: (): Promise<AuditEvent[]> =>
+    fetch(`${API_BASE}/audit`).then((r) => handleResponse<AuditEvent[]>(r)),
 
   // Data Source Health
-  getDataSourceHealth: () => fetchJson<DataSourceHealth[]>('/data-sources/health'),
-  updateDataSourceHealth: (sourceName: string, status: HealthState, freshness?: string) =>
-    fetchJson<DataSourceHealth>(`/data-sources/health/${sourceName}`, {
+  getDataSourceHealth: (): Promise<DataSourceHealth[]> =>
+    fetch(`${API_BASE}/data-sources/health`).then((r) => handleResponse<DataSourceHealth[]>(r)),
+
+  updateDataSourceHealth: (sourceName: string, status: HealthState, latencyMs?: number, stalenessHours?: number): Promise<DataSourceHealth> =>
+    fetch(`${API_BASE}/data-sources/health/${sourceName}`, {
       method: 'PUT',
-      body: JSON.stringify({ status, freshness }),
-    }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, latencyMs, stalenessHours })
+    }).then((r) => handleResponse<DataSourceHealth>(r)),
 
-  // Policies
-  getPolicies: () => fetchJson<RolePolicy[]>('/policies'),
-  savePolicy: (policy: RolePolicy) =>
-    fetchJson<RolePolicy>('/policies', {
-      method: 'POST',
-      body: JSON.stringify(policy),
-    }),
-  deletePolicy: (id: number) =>
-    fetch(`/api/policies/${id}`, { method: 'DELETE' }),
+  // Evaluation & Metrics
+  runEvaluationExperiment: (): Promise<EvaluationMetrics[]> =>
+    fetch(`${API_BASE}/evaluation/run`).then((r) => handleResponse<EvaluationMetrics[]>(r)),
 
-  // Evaluation
-  runEvaluation: () => fetchJson<EvaluationMetrics>('/evaluation/run'),
+  getMultiTrialExperiment: (trials: number = 10): Promise<ExperimentResult> =>
+    fetch(`${API_BASE}/evaluation/multi-run?trials=${trials}`).then((r) => handleResponse<ExperimentResult>(r)),
 
-  // Employees
-  getEmployees: () => fetchJson<Employee[]>('/employees'),
+  // Notifications
+  getNotifications: (): Promise<NotificationAlert[]> =>
+    fetch(`${API_BASE}/notifications`).then((r) => handleResponse<NotificationAlert[]>(r)),
+
+  // Policy Management
+  getPolicy: (): Promise<RiskThresholdPolicy> =>
+    fetch(`${API_BASE}/policy`).then((r) => handleResponse<RiskThresholdPolicy>(r)),
+
+  updatePolicy: (policy: RiskThresholdPolicy): Promise<RiskThresholdPolicy> =>
+    fetch(`${API_BASE}/policy`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(policy)
+    }).then((r) => handleResponse<RiskThresholdPolicy>(r))
 };
