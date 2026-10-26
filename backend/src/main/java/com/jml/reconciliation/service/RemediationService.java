@@ -13,7 +13,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 
+/**
+ * Service managing Qualification Remediation, Instant State Rollback & Stakeholder Evidence Validation.
+ * 
+ * Key Capabilities:
+ * 1. Execution: Modifies real application entitlements (e.g. revoking orphaned access or downgrading mover admin rights).
+ * 2. Instant Rollback: Restores previous permissions with zero data loss if an action was executed mistakenly.
+ * 3. Stakeholder Validation: Digital sign-off stamping on removal evidence trails for compliance readiness.
+ */
 @Service
 public class RemediationService {
 
@@ -33,14 +42,31 @@ public class RemediationService {
         this.auditService = auditService;
     }
 
+    /**
+     * Lists all remediation actions and their current lifecycle statuses.
+     * @return list of RemediationAction entities
+     */
     public List<RemediationAction> getAllActions() {
         return actionRepository.findAll();
     }
 
+    /**
+     * Executes an approved remediation action in the target application entitlement store.
+     * 
+     * Workflow:
+     * 1. Validates that the action is currently in APPROVED status.
+     * 2. Preserves the current permission level in previousPermissionLevel for rollback support.
+     * 3. Either deletes the entitlement (for REVOKE) or modifies the permission level.
+     * 4. Updates status to EXECUTED with timestamp.
+     * 5. Emits an immutable audit trail event.
+     * 
+     * @param actionId database ID of the approved remediation action
+     * @return updated RemediationAction entity
+     */
     @Transactional
     public RemediationAction executeAction(Long actionId) {
         RemediationAction action = actionRepository.findById(actionId)
-                .orElseThrow(() -> new IllegalArgumentException("Remediation action not found with ID: " + actionId));
+                .orElseThrow(() -> new NoSuchElementException("Remediation action not found with ID: " + actionId));
 
         if (action.getStatus() != RemediationStatus.APPROVED) {
             throw new IllegalStateException("Only APPROVED actions can be executed. Current status: " + action.getStatus());
@@ -73,10 +99,23 @@ public class RemediationService {
         return updated;
     }
 
+    /**
+     * Performs instant status rollback restoring the user's previously held permission level.
+     * 
+     * Workflow:
+     * 1. Validates that the action was previously EXECUTED.
+     * 2. Restores the prior entitlement record using previousPermissionLevel.
+     * 3. Sets action status to ROLLED_BACK.
+     * 4. Logs a dedicated STATUS_ROLLED_BACK audit event detailing actor and rationale.
+     * 
+     * @param actionId database ID of the executed action
+     * @param request optional actor and reason metadata
+     * @return updated RemediationAction entity
+     */
     @Transactional
     public RemediationAction rollbackAction(Long actionId, RollbackRequest request) {
         RemediationAction action = actionRepository.findById(actionId)
-                .orElseThrow(() -> new IllegalArgumentException("Remediation action not found with ID: " + actionId));
+                .orElseThrow(() -> new NoSuchElementException("Remediation action not found with ID: " + actionId));
 
         if (action.getStatus() != RemediationStatus.EXECUTED) {
             throw new IllegalStateException("Only EXECUTED actions can be rolled back. Current status: " + action.getStatus());
@@ -106,10 +145,18 @@ public class RemediationService {
         return updated;
     }
 
+    /**
+     * Applies a stakeholder validation digital sign-off to an executed remediation.
+     * 
+     * @param actionId database ID of the remediation action
+     * @param validatedBy name or ID of the compliance auditor
+     * @param notes verification notes
+     * @return updated RemediationAction entity with stakeholder validation stamp
+     */
     @Transactional
     public RemediationAction validateAction(Long actionId, String validatedBy, String notes) {
         RemediationAction action = actionRepository.findById(actionId)
-                .orElseThrow(() -> new IllegalArgumentException("Remediation action not found with ID: " + actionId));
+                .orElseThrow(() -> new NoSuchElementException("Remediation action not found with ID: " + actionId));
 
         action.setStakeholderValidated(true);
         action.setValidatedBy(validatedBy != null && !validatedBy.isBlank() ? validatedBy : "STAKEHOLDER_AUDITOR");

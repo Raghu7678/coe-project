@@ -6,6 +6,20 @@ import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Detected Access Risk Anomaly Entity.
+ * 
+ * Maps to database table 'reconciliation_issues'.
+ * Stores access discrepancy findings:
+ * - username & fullName of identity
+ * - issueType: ORPHANED_ACCESS_LEAVER, EXCESSIVE_ACCESS_MOVER, UNAPPROVED_PRIVILEGED_ACCESS
+ * - riskLevel: LOW, MEDIUM, HIGH, CRITICAL
+ * - dataConfidenceScore: calculated feed confidence at detection time [0.0 - 1.0]
+ * - evidenceDetails: raw multi-source telemetry proving the discrepancy
+ * - slaTargetMinutes: target time-to-remediate (15, 60, or 120/1440 mins)
+ * - detectionEngine: PROTOTYPE vs BASELINE
+ * - safetyGateTriggered: boolean indicating whether automated execution was blocked
+ */
 @Entity
 @Table(name = "reconciliation_issues")
 public class ReconciliationIssue {

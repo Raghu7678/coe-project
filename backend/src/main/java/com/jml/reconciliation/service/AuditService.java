@@ -6,6 +6,12 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * Immutable Append-Only Audit Logging Service.
+ * 
+ * Records tamper-evident security events, dual-control decisions,
+ * engine executions, and instant rollback actions with timestamps.
+ */
 @Service
 public class AuditService {
 

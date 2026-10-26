@@ -16,7 +16,16 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
+/**
+ * REST Controller for Personnel Entities & Executive Dashboard Aggregations.
+ * 
+ * Provides:
+ * - Query endpoints for all 40 pre-seeded identities (/api/employees, /api/contractors)
+ * - Single identity lookup by username or employee code
+ * - High-performance aggregate summary statistics for the executive cyber dashboard
+ */
 @RestController
 @RequestMapping("/api")
 @CrossOrigin(originPatterns = "*")
@@ -41,16 +50,51 @@ public class EmployeeController {
         this.healthService = healthService;
     }
 
-    @GetMapping("/employees")
+    /**
+     * Lists all employee / contractor identities currently registered in the system.
+     * Supports both /api/employees and /api/contractors aliases.
+     * 
+     * @return List of Employee records
+     */
+    @GetMapping({"/employees", "/contractors"})
     public List<Employee> getAllEmployees() {
         return employeeRepository.findAll();
     }
 
+    /**
+     * Retrieves an individual employee or contractor by username or employee ID.
+     * 
+     * @param identifier username (e.g. 'usr_alex') or employeeId (e.g. 'EMP-1001')
+     * @return Employee entity
+     */
+    @GetMapping({"/employees/{identifier}", "/contractors/{identifier}"})
+    public Employee getEmployeeByIdentifier(@PathVariable String identifier) {
+        return employeeRepository.findByUsername(identifier)
+                .or(() -> employeeRepository.findByEmployeeId(identifier))
+                .orElseThrow(() -> new NoSuchElementException("Personnel identity not found with identifier: " + identifier));
+    }
+
+    /**
+     * Compiles aggregate summary metrics for the executive dashboard.
+     * 
+     * Metrics calculated:
+     * - Total identities count
+     * - Active personnel count
+     * - Terminated leavers retaining potential access
+     * - High and Critical risk anomaly counts
+     * - Pending dual-control approval actions
+     * - Executed remediation actions
+     * - Real-time average data confidence score (computed from source feeds)
+     * - Current health status map across all 4 feeds
+     * 
+     * @return DashboardSummaryDto containing system-wide KPIs
+     */
     @GetMapping("/dashboard/summary")
     public DashboardSummaryDto getDashboardSummary() {
         long total = employeeRepository.count();
         long active = employeeRepository.findByStatus(EmploymentStatus.ACTIVE).size();
-        long leavers = employeeRepository.findByStatus(EmploymentStatus.LEFT).size() + employeeRepository.findByStatus(EmploymentStatus.LEAVER).size();
+        long leavers = employeeRepository.findByStatus(EmploymentStatus.LEFT).size() +
+                employeeRepository.findByStatus(EmploymentStatus.LEAVER).size();
         long highRiskCount = issueRepository.findByDetectionEngineAndRiskLevel("PROTOTYPE", RiskLevel.HIGH).size() +
                 issueRepository.findByDetectionEngineAndRiskLevel("PROTOTYPE", RiskLevel.CRITICAL).size();
         long pendingApprovals = actionRepository.findByStatus(RemediationStatus.PENDING_APPROVAL).size();

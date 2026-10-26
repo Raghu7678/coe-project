@@ -10,6 +10,20 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+/**
+ * Service for Defensible Empirical Evaluation & Comparative Benchmark Experiments.
+ * 
+ * Provides:
+ * 1. Deterministic Comparative Experiment: Measures Precision, Recall, and SLA target compliance
+ *    between the Naive Baseline Engine and the Prototype Engine against ground truth (N=12 issues).
+ * 2. Multi-Trial Monte Carlo Experiment: Executes repeated experimental iterations (e.g. N=10 trials),
+ *    computing sample mean, sample variance ($S^2$), sample standard deviation ($S$), standard error ($SE$),
+ *    and 95% Confidence Intervals:
+ *    $$\text{CI}_{95\%} = \bar{x} \pm 1.96 \cdot \frac{S}{\sqrt{N}}$$
+ * 3. MTTR vs. SLA Compliance Analysis: Evaluates mean time to remediation across SLA tiers (15m, 60m, 1440m).
+ * 4. Grounded Confidence Band Error Analysis: Evaluates false positives/negatives across confidence tiers
+ *    (High >= 0.75, Medium 0.30 - 0.75, Low 0.10 - 0.30).
+ */
 @Service
 public class EvaluationService {
 
@@ -26,6 +40,12 @@ public class EvaluationService {
         this.issueRepository = issueRepository;
     }
 
+    /**
+     * Executes both baseline and prototype engines against the current database
+     * and evaluates comparative precision, recall, and detection rate.
+     * 
+     * @return List containing baseline metrics and prototype metrics
+     */
     public List<EvaluationMetricsDto> runComparativeExperiment() {
         prototypeEngineService.runReconciliation();
         baselineEngineService.runBaselineReconciliation();
@@ -80,10 +100,16 @@ public class EvaluationService {
         return Arrays.asList(baselineMetrics, prototypeMetrics);
     }
 
+    /**
+     * Executes a multi-trial Monte Carlo simulation to evaluate statistical confidence,
+     * sample variance, and error distributions.
+     * 
+     * @param trials number of trial iterations (defaults to 10 if <= 0)
+     * @return ExperimentResultDto with variance, 95% CIs, SLA breakdown, and error analysis
+     */
     public ExperimentResultDto runMultiTrialExperiment(int trials) {
         int numTrials = trials > 0 ? trials : 10;
 
-        // Perform multi-run simulations to calculate empirical variance & 95% CIs
         double[] precisionRuns = new double[numTrials];
         double[] recallRuns = new double[numTrials];
         double[] f1Runs = new double[numTrials];

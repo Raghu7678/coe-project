@@ -1,7 +1,6 @@
 package com.jml.reconciliation.service;
 
 import com.jml.reconciliation.entity.*;
-
 import com.jml.reconciliation.model.enums.*;
 import com.jml.reconciliation.repository.*;
 import org.springframework.stereotype.Service;
@@ -10,6 +9,19 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Naive Baseline Access Evaluation Engine.
+ * 
+ * Serves as the comparative benchmark against the improved prototype engine.
+ * 
+ * Methodology & Flaws of the Baseline Approach:
+ * 1. Single-attribute check: Evaluates ONLY HR employment status (LEFT) against application entitlements.
+ * 2. Lacks Active Directory integration: Completely misses orphaned directory group memberships.
+ * 3. Lacks Role Mover logic: Incapable of detecting privilege creep when employees switch departments.
+ * 4. Lacks Approval History validation: Incapable of identifying unapproved administrative grants.
+ * 5. Ignores Feed Freshness: Operates with naive 100% confidence assumption even when data sources are degraded.
+ * 6. Zero Governance: Does not trigger safety gates or dual-control reviews, leading to unverified revocations.
+ */
 @Service
 public class BaselineEngineService {
 
@@ -29,6 +41,11 @@ public class BaselineEngineService {
         this.auditService = auditService;
     }
 
+    /**
+     * Executes the naive baseline evaluation against the dataset.
+     * 
+     * @return List of baseline-detected ReconciliationIssue items
+     */
     @Transactional
     public List<ReconciliationIssue> runBaselineReconciliation() {
         issueRepository.deleteByDetectionEngine("BASELINE");

@@ -3,6 +3,14 @@ package com.jml.reconciliation.entity;
 import com.jml.reconciliation.model.enums.PermissionLevel;
 import jakarta.persistence.*;
 
+/**
+ * Application Entitlement Entity.
+ * 
+ * Maps to database table 'entitlements'.
+ * Represents an active privilege assigned to an identity username within a target SaaS application:
+ * - appName: AWS Console, GitHub, Jira, HR System, Finance System
+ * - permissionLevel: READ, WRITE, ADMIN, NONE
+ */
 @Entity
 @Table(name = "entitlements")
 public class Entitlement {

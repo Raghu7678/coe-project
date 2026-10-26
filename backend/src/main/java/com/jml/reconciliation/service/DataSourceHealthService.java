@@ -10,6 +10,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Service managing upstream Data Source Health states and simulated feed degradation.
+ * 
+ * Supports empirical resilience testing:
+ * Modifying feed states directly alters the calculated confidence score and dynamically
+ * changes prototype risk engine execution behavior.
+ */
 @Service
 public class DataSourceHealthService {
 

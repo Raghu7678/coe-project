@@ -12,6 +12,23 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Synthetic Dataset Seed Initializer & Bootstrap Runner.
+ * 
+ * Automatically initializes database state upon application startup:
+ * 1. Data Feeds Health: Registers 4 feeds (HR, DIRECTORY, APPLICATION_ENTITLEMENTS, APPROVAL_HISTORY)
+ *    in an initially AVAILABLE state with nominal latency.
+ * 2. Role Policies: Defines Role-Based Access Control (RBAC) baseline rules for Developer, HR Manager,
+ *    Finance Analyst, and System Administrator roles across GitHub, Jira, HR System, Finance, AWS.
+ * 3. Synthetic Benchmark Dataset: Pre-seeds exactly 40 enterprise identities:
+ *    - Case 1: Alex Mercer (EMP-1001) - Role Mover (Developer -> HR Manager) retaining unapproved GitHub ADMIN.
+ *    - Case 2: Sarah Jenkins (EMP-1002) - Terminated Leaver retaining Finance System WRITE and finance-team group.
+ *    - Case 3: David Vance (EMP-1003) - Active Developer with unapproved AWS Console ADMIN (no approval ticket).
+ *    - Case 4: Marcus Brody (EMP-1004) - Critical Terminated Leaver retaining AWS Console ADMIN (15-min Critical SLA).
+ *    - Cases 5-40: 36 synthetic active employees across Engineering, HR, Finance, and IT departments.
+ * 4. Bootstrap Run: Executes an initial prototype reconciliation cycle so dashboard KPIs and approval queues
+ *    are populated immediately upon boot without requiring manual user triggering.
+ */
 @Component
 public class DataInitializer implements CommandLineRunner {
 

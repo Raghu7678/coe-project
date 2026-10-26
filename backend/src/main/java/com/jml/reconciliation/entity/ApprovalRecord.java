@@ -5,6 +5,13 @@ import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Immutable Historical Approval Record Entity.
+ * 
+ * Maps to database table 'approval_records'.
+ * Captures historical ITSM/ticket grants and dual-control signoffs.
+ * Used by ReconciliationEngineService to verify whether an administrative grant was formally approved.
+ */
 @Entity
 @Table(name = "approval_records")
 public class ApprovalRecord {

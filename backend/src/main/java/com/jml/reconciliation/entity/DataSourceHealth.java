@@ -5,6 +5,18 @@ import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Upstream Feed Telemetry & Status Entity.
+ * 
+ * Maps to database table 'data_source_health'.
+ * Monitors the operational health of:
+ * - HR feed (status, latency, staleness)
+ * - DIRECTORY feed
+ * - APPLICATION_ENTITLEMENTS feed
+ * - APPROVAL_HISTORY feed
+ * 
+ * Directly influences the composite data confidence calculation.
+ */
 @Entity
 @Table(name = "data_source_health")
 public class DataSourceHealth {

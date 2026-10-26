@@ -4,6 +4,14 @@ import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Immutable Audit Event Log Entity.
+ * 
+ * Maps to database table 'audit_events'.
+ * Append-only ledger recording all security events:
+ * RECONCILIATION_RUN, SAFETY_GATE_TRIGGERED, APPROVAL_GRANTED, APPROVAL_REJECTED,
+ * REMEDIATION_EXECUTED, STATUS_ROLLED_BACK, STAKEHOLDER_VALIDATED, DATA_SOURCE_HEALTH_UPDATED.
+ */
 @Entity
 @Table(name = "audit_events")
 public class AuditEvent {

@@ -7,6 +7,12 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+/**
+ * In-Memory & Server-Sent Events (SSE) Real-Time Notification Broadcasting Service.
+ * 
+ * Maintains a thread-safe ring buffer of recent security alerts and dispatches live events
+ * to connected web clients when critical SLA breach warnings or dual-control approval requests occur.
+ */
 @Service
 public class NotificationService {
 

@@ -3,6 +3,16 @@ package com.jml.reconciliation.entity;
 import com.jml.reconciliation.model.enums.PermissionLevel;
 import jakarta.persistence.*;
 
+/**
+ * Role-Based Access Control (RBAC) Policy Rule Entity.
+ * 
+ * Maps to database table 'role_policies'.
+ * Defines expected and required application permission levels for job titles:
+ * - Developer -> GitHub (WRITE), Jira (READ)
+ * - HR Manager -> HR System (ADMIN), Jira (READ)
+ * - Finance Analyst -> Finance System (READ), Jira (READ)
+ * - System Administrator -> AWS Console (ADMIN), GitHub (ADMIN)
+ */
 @Entity
 @Table(name = "role_policies")
 public class RolePolicy {

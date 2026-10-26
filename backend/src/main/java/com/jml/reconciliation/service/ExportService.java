@@ -7,6 +7,14 @@ import org.springframework.stereotype.Service;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+/**
+ * Compliance Export & Document Generation Service.
+ * 
+ * Generates:
+ * 1. RFC 4180 compliant CSV export for removal evidence trails (Remediation actions).
+ * 2. Printable HTML / PDF formatted compliance audit report for executive stakeholders.
+ * 3. Immutable audit trail log CSV export.
+ */
 @Service
 public class ExportService {
 

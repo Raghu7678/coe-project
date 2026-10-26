@@ -2,6 +2,13 @@ package com.jml.reconciliation.entity;
 
 import jakarta.persistence.*;
 
+/**
+ * Corporate Directory / LDAP Group Membership Entity.
+ * 
+ * Maps to database table 'directory_groups'.
+ * Tracks group associations (e.g. 'engineering-dev', 'hr-managers', 'finance-team', 'sysadmins')
+ * tied to employee usernames.
+ */
 @Entity
 @Table(name = "directory_groups")
 public class DirectoryGroup {

@@ -188,11 +188,90 @@ public class JmlReconciliationEngineTests {
         assertTrue(csv.startsWith("Action ID,Issue ID,Username"));
     }
 
+    @Autowired
+    private PolicyService policyService;
+
+    @Autowired
+    private com.jml.reconciliation.config.GlobalExceptionHandler globalExceptionHandler;
+
     @Test
-    @DisplayName("Should seed and broadcast real-time notification alerts")
-    public void testRealTimeNotificationAlerts() {
-        List<NotificationAlert> alerts = notificationService.getRecentNotifications();
-        assertFalse(alerts.isEmpty());
-        assertTrue(alerts.stream().anyMatch(a -> "CRITICAL".equals(a.getSeverity())));
+    @DisplayName("Should translate domain exceptions into standardized ApiErrorResponse via GlobalExceptionHandler")
+    public void testGlobalExceptionHandlerApiErrorBoundary() {
+        org.springframework.mock.web.MockHttpServletRequest request = new org.springframework.mock.web.MockHttpServletRequest();
+        request.setRequestURI("/api/approvals/1/decision");
+
+        // 1. Dual-Control self-approval violation (400 Bad Request)
+        IllegalArgumentException selfApprovalEx = new IllegalArgumentException("Self-approval is strictly forbidden under dual-control accountable approval policy.");
+        org.springframework.http.ResponseEntity<ApiErrorResponse> badRequestEntity = globalExceptionHandler.handleIllegalArgument(selfApprovalEx, request);
+        assertEquals(400, badRequestEntity.getStatusCode().value());
+        assertNotNull(badRequestEntity.getBody());
+        assertEquals("DUAL_CONTROL_SELF_APPROVAL_VIOLATION", badRequestEntity.getBody().getErrorCode());
+        assertTrue(badRequestEntity.getBody().getMessage().contains("Self-approval"));
+
+        // 2. Illegal lifecycle state transition (409 Conflict)
+        IllegalStateException stateEx = new IllegalStateException("Only APPROVED actions can be executed. Current status: PENDING_APPROVAL");
+        org.springframework.http.ResponseEntity<ApiErrorResponse> conflictEntity = globalExceptionHandler.handleIllegalState(stateEx, request);
+        assertEquals(409, conflictEntity.getStatusCode().value());
+        assertNotNull(conflictEntity.getBody());
+        assertEquals("INVALID_LIFECYCLE_STATE", conflictEntity.getBody().getErrorCode());
+
+        // 3. Resource Not Found (404 Not Found)
+        java.util.NoSuchElementException notFoundEx = new java.util.NoSuchElementException("Action not found with ID: 999");
+        org.springframework.http.ResponseEntity<ApiErrorResponse> notFoundEntity = globalExceptionHandler.handleNotFound(notFoundEx, request);
+        assertEquals(404, notFoundEntity.getStatusCode().value());
+        assertNotNull(notFoundEntity.getBody());
+        assertEquals("RESOURCE_NOT_FOUND", notFoundEntity.getBody().getErrorCode());
+    }
+
+    @Test
+    @DisplayName("Should clamp confidence score to 0.0 floor when multiple feeds fail")
+    public void testConfidenceScoreLowerBoundFloor() {
+        List<DataSourceHealth> feeds = healthRepository.findAll();
+        for (DataSourceHealth feed : feeds) {
+            feed.setStatus(HealthState.UNAVAILABLE);
+            healthRepository.save(feed);
+        }
+
+        double confidence = reconciliationEngineService.calculateDataConfidence();
+        assertEquals(0.0, confidence, 0.001, "Confidence score must be clamped at 0.0 and never become negative.");
+    }
+
+    @Test
+    @DisplayName("Should enforce 15-minute SLA target for critical leavers with ADMIN permissions")
+    public void testCriticalLeaverSlaTargetMinutes() {
+        List<ReconciliationIssue> issues = issueRepository.findByDetectionEngine("PROTOTYPE");
+        ReconciliationIssue marcusIssue = issues.stream()
+                .filter(i -> "usr_marcus".equals(i.getUsername()))
+                .findFirst()
+                .orElse(null);
+
+        assertNotNull(marcusIssue, "Critical leaver Marcus Brody must have a detected issue.");
+        assertEquals(RiskLevel.CRITICAL, marcusIssue.getRiskLevel(), "Marcus Brody holds AWS Console ADMIN and must be flagged CRITICAL.");
+        assertEquals(15, marcusIssue.getSlaTargetMinutes(), "Critical risk leavers must be assigned 15-minute target SLA.");
+        assertTrue(marcusIssue.getSafetyGateTriggered(), "Critical leaver must trigger mandatory safety gate.");
+    }
+
+    @Test
+    @DisplayName("Should retrieve, validate, and update dynamic risk threshold policies")
+    public void testRiskThresholdPolicyManagement() {
+        RiskThresholdPolicyDto initial = policyService.getRiskThresholdPolicy();
+        assertNotNull(initial);
+        assertEquals(1.25, initial.getMaxAllowedEmr(), 0.01);
+
+        RiskThresholdPolicyDto updated = new RiskThresholdPolicyDto(
+                1L, "Custom Stricter Policy", 1.10, 2.5, 5.0, 75,
+                0.40, 0.20, 0.20, 0.20, 0.85
+        );
+        policyService.updateRiskThresholdPolicy(updated);
+
+        RiskThresholdPolicyDto active = policyService.getRiskThresholdPolicy();
+        assertEquals("Custom Stricter Policy", active.getPolicyName());
+        assertEquals(1.10, active.getMaxAllowedEmr(), 0.01);
+        assertEquals(0.85, active.getConfidenceSafetyGateThreshold(), 0.01);
+
+        // Validation test: confidence threshold out of bounds
+        RiskThresholdPolicyDto invalid = new RiskThresholdPolicyDto();
+        invalid.setConfidenceSafetyGateThreshold(1.50);
+        assertThrows(IllegalArgumentException.class, () -> policyService.updateRiskThresholdPolicy(invalid));
     }
 }

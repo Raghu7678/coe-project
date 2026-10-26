@@ -1,7 +1,6 @@
 package com.jml.reconciliation.service;
 
 import com.jml.reconciliation.entity.*;
-
 import com.jml.reconciliation.model.enums.*;
 import com.jml.reconciliation.repository.*;
 import org.springframework.stereotype.Service;
@@ -12,6 +11,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Core Evaluation Engine for JML (Joiner-Mover-Leaver) Access Reconciliation & Risk Pre-Qualification.
+ * 
+ * Ingests multi-source identity feeds:
+ * 1. Human Resources (HR System) - authoritative source for employment status (ACTIVE, LEFT, ROLE_MOVER).
+ * 2. Active Directory / LDAP - corporate directory group memberships.
+ * 3. Application Entitlements - actual privileges granted in SaaS/cloud platforms (AWS, GitHub, Jira, HR System, Finance).
+ * 4. Approval History - documented ticketing signoffs and transition grants.
+ * 
+ * Resilience & Governance:
+ * - Dynamic Data Confidence Formula: Computes feed freshness and availability score C in [0.0, 1.0].
+ * - Safety Gate Enforcer: When confidence degrades (< 0.75) or an anomaly has CRITICAL/HIGH risk,
+ *   actions are automatically safety-gated and routed to the accountable dual-control approval queue.
+ */
 @Service
 public class ReconciliationEngineService {
 
@@ -46,6 +59,17 @@ public class ReconciliationEngineService {
         this.auditService = auditService;
     }
 
+    /**
+     * Executes the comprehensive Prototype reconciliation cycle across all identities.
+     * 
+     * Detection Rules:
+     * 1. Orphaned Leaver Access: Flag employees marked LEFT/LEAVER who still retain active entitlements or groups.
+     * 2. Excessive Role Mover Access: Flag role movers whose entitlements exceed the allowed policy for their current role,
+     *    unless an explicit transition approval record exists.
+     * 3. Unapproved Privileged Access: Flag active users holding ADMIN or WRITE permissions without documented approvals.
+     * 
+     * @return List of detected ReconciliationIssue items
+     */
     @Transactional
     public List<ReconciliationIssue> runReconciliation() {
         issueRepository.deleteByDetectionEngine("PROTOTYPE");
@@ -121,7 +145,7 @@ public class ReconciliationEngineService {
                             boolean gate = level == RiskLevel.HIGH || confidenceScore < 0.75;
 
                             ReconciliationIssue issue = new ReconciliationIssue(
-                                    username,
+                                     username,
                                     emp.getFullName(),
                                     IssueType.EXCESSIVE_ACCESS_MOVER,
                                     level,
@@ -183,6 +207,9 @@ public class ReconciliationEngineService {
         return detectedIssues;
     }
 
+    /**
+     * Determines whether a given permission level exceeds the baseline role policy limit.
+     */
     private boolean isHigherPermission(PermissionLevel current, PermissionLevel policy) {
         if (policy == null || policy == PermissionLevel.NONE) return true;
         if (current == PermissionLevel.ADMIN && policy != PermissionLevel.ADMIN) return true;
@@ -190,6 +217,10 @@ public class ReconciliationEngineService {
         return false;
     }
 
+    /**
+     * Saves the detected anomaly and creates an associated RemediationAction.
+     * Enforces safety gating: If safetyGateTriggered is true, status is set to PENDING_APPROVAL.
+     */
     private ReconciliationIssue saveAndGate(ReconciliationIssue issue, Employee employee, String actionType, PermissionLevel targetLevel) {
         ReconciliationIssue saved = issueRepository.save(issue);
 
@@ -218,6 +249,15 @@ public class ReconciliationEngineService {
         return saved;
     }
 
+    /**
+     * Calculates the composite data confidence score based on the health states of all upstream feeds.
+     * 
+     * Formula:
+     * C = 1.0 - (0.15 * StaleCount) - (0.25 * DelayedCount) - (0.40 * UnavailableCount)
+     * Clamped to [0.0, 1.0].
+     * 
+     * @return double confidence score between 0.0 and 1.0
+     */
     public double calculateDataConfidence() {
         List<DataSourceHealth> feeds = healthRepository.findAll();
         if (feeds.isEmpty()) return 1.0;

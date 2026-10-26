@@ -6,6 +6,15 @@ import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Qualification Remediation Action & Audit Entity.
+ * 
+ * Maps to database table 'remediation_actions'.
+ * Tracks the complete lifecycle of corrective measures:
+ * - status: PENDING_APPROVAL -> APPROVED -> EXECUTED -> ROLLED_BACK / REJECTED
+ * - previousPermissionLevel & targetPermissionLevel for deterministic state rollback
+ * - stakeholder signoff validation stamp (stakeholderValidated, validatedBy, validationNotes, validatedAt)
+ */
 @Entity
 @Table(name = "remediation_actions")
 public class RemediationAction {
